@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "A simple family points tracker.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f8fafc",
-    theme_color: "#0284c7",
+    background_color: "#f7fdf9",
+    theme_color: "#059669",
     icons: [
       {
         src: "/icon",

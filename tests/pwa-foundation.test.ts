@@ -7,7 +7,21 @@ describe("iPhone PWA foundation", () => {
 
     expect(manifest).toContain('display: "standalone"');
     expect(manifest).toContain('start_url: "/"');
+    expect(manifest).toContain('theme_color: "#059669"');
     await access(new URL("../app/sw.ts", import.meta.url));
+  });
+
+  it("uses the emerald task-card mark for browser and iPhone icons", async () => {
+    const [browserIcon, appleIcon] = await Promise.all([
+      readFile(new URL("../app/icon.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/apple-icon.tsx", import.meta.url), "utf8"),
+    ]);
+
+    expect(browserIcon).toContain("linear-gradient(135deg, #059669, #0d9488)");
+    expect(browserIcon).toContain("M14 33 26 45 51 19");
+    expect(browserIcon).toContain("M27 12v30");
+    expect(browserIcon).toContain("#f59e0b");
+    expect(appleIcon).toContain('export { contentType, default, size } from "./icon"');
   });
 
   it("configures the Next build to generate the service worker", async () => {

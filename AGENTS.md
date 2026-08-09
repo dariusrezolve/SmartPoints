@@ -72,3 +72,9 @@ Never report an unrun check as passed.
 ## Approval Boundaries
 
 Ask before adding paid services, creating external accounts, transmitting user data to a third party, changing retention, deleting data, pushing, or deploying.
+
+## Release Policy
+
+- The default release target is staging/preview. A staging deployment must be used to validate a release before production.
+- Never deploy with `--prod` unless the user explicitly requests that specific production release in the current conversation. Previous approvals do not carry over.
+- Treat production as stable: do not use it for exploratory testing, database experiments, or incomplete work.
