@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-09 — SmartPoints gained week-over-week statistics trends, task sparklines, reward-spend shares, persistent management workflows, modal-safe action toasts, automatic additive offline reconciliation, and an emerald task-card app icon.
+2026-08-09 — SmartPoints gained week-over-week statistics trends, task sparklines, reward-spend shares, persistent management workflows, modal-safe action toasts, automatic additive offline reconciliation, an emerald task-card app icon, and a one-time clean-start reset for pre-MVP offline data.
 
 ## Current position
 
@@ -24,6 +24,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 03-statistics-trends | Weekly comparison dashboard | Complete: deterministic two-week ledger aggregation, overall trend cards, daily and task SVG sparklines, and reward spending shares/percentages. |
 | 02-iphone-offline-pwa | F4–F5 — Additive offline reconciliation | Complete: captured-value idempotent RPCs, automatic retries/recovery, duplicate-undo convergence, and no manual discard queue. |
 | PWA visual identity | Emerald task-card app icon | Complete: browser and Apple Home Screen icons share a high-contrast emerald/teal task-completion mark with a warm point accent. TDD was skipped only for the release-policy documentation because it is governance-only; the icon behavior has a focused regression test. |
+| PWA clean start | Clear pre-MVP offline point state | Complete: IndexedDB schema upgrade removes the old dashboard snapshot and queued actions once, so the requested ledger reset cannot be visually stale or replayed from an installed iPhone. |
 
 ## Verified state
 
@@ -45,6 +46,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Statistics compare the selected Monday–Sunday week with the prior week, net task undo events, identify improving tasks, and show each reward's share of spending without a third-party chart dependency.
 - Action toasts use the browser top layer so success and failure feedback stays visible above native modal dialogs.
 - Offline daily actions use captured values and idempotency keys. Distinct actions from different devices are additive; duplicate requests are not, and legacy terminal queue items are retried automatically.
+- Updating from the pre-MVP PWA upgrades the local offline database once, deleting its old snapshots and queued actions; new MVP offline actions persist normally afterward.
 - The browser favicon, manifest icon, and iPhone Apple touch icon use the emerald/teal task-completion mark; browser rendering does not depend on an external icon font.
 - Release policy requires staging/preview validation before production and an explicit current-conversation production request.
 

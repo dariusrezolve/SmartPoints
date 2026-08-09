@@ -3,6 +3,7 @@ export type OfflineReward = { id: string; name: string; cost: number };
 export type OfflineSnapshot = { key: string; parentId: string; childId: string; childName: string; currentDate: string; balance: number; receivedThisWeek: number; redeemedThisWeek: number; tasks: OfflineTask[]; rewards: OfflineReward[]; savedAt: string };
 
 const databaseName = "smartpoints-offline";
+const databaseVersion = 3;
 const storeName = "snapshots";
 const actionStoreName = "actions";
 export type OfflineAction = { id: string; parentId: string; childId: string; kind: "complete" | "undo" | "redeem"; taskId?: string; rewardId?: string; eventId?: string; effectiveDate?: string; pointDelta?: number; createdAt: string; status: "queued" | "needs_attention"; reason?: string };
@@ -11,9 +12,18 @@ export function offlineSnapshotKey(parentId: string, childId: string) { return `
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(databaseName, 2);
+    const request = indexedDB.open(databaseName, databaseVersion);
     request.onerror = () => reject(request.error);
-    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(storeName)) request.result.createObjectStore(storeName, { keyPath: "key" }); if (!request.result.objectStoreNames.contains(actionStoreName)) request.result.createObjectStore(actionStoreName, { keyPath: "id" }); };
+    request.onupgradeneeded = (event) => {
+      if (!request.result.objectStoreNames.contains(storeName)) request.result.createObjectStore(storeName, { keyPath: "key" });
+      if (!request.result.objectStoreNames.contains(actionStoreName)) request.result.createObjectStore(actionStoreName, { keyPath: "id" });
+      if (event.oldVersion > 0 && event.oldVersion < databaseVersion) {
+        const transaction = request.transaction;
+        if (!transaction) return;
+        transaction.objectStore(storeName).clear();
+        transaction.objectStore(actionStoreName).clear();
+      }
+    };
     request.onsuccess = () => resolve(request.result);
   });
 }
