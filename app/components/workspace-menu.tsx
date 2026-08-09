@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarCheck2, ChevronDown, Gift, ListTodo, LogOut, Menu as MenuIcon, Plus, RotateCcw, Share2, Users, X } from "lucide-react";
+import { BarChart3, CalendarCheck2, ChevronDown, Download, Gift, ListTodo, LogOut, Menu as MenuIcon, Plus, RotateCcw, Share, Share2, SquarePlus, Users, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from "react";
 import { archiveChild, createChild, renameChild, updateHouseholdTimeZone } from "@/app/children/actions";
 import { archiveReward, archiveTask, createReward, createTask, resetWeeklyPoints, setWeeklyTasks, updateReward, updateTask } from "@/app/points/actions";
@@ -16,9 +16,10 @@ import { createInvitation } from "@/app/invitations/actions";
 type Child = { id: string; display_name: string };
 type Task = { id: string; name: string; points: number; icon: TaskIconName };
 type Reward = { id: string; name: string; cost: number; icon: TaskIconName };
-type ModalName = "task" | "reward" | "dailyTasks" | "family" | "resetWeek" | "share" | null;
+type ModalName = "task" | "reward" | "dailyTasks" | "family" | "install" | "resetWeek" | "share" | null;
 type ManagerName = "tasks" | "rewards";
 type PointSummary = { balance: number; receivedThisWeek: number; redeemedThisWeek: number };
+type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
 type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; initialManager?: ManagerName; pointSummary: PointSummary; rewards: Reward[]; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string };
 
@@ -62,6 +63,8 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
   const [selectedEditTaskIcon, setSelectedEditTaskIcon] = useState<TaskIconName>("CircleCheck");
   const [selectedEditRewardIcon, setSelectedEditRewardIcon] = useState<TaskIconName>("Star");
   const [dailyTaskIds, setDailyTaskIds] = useState(() => new Set(selectedTaskIds));
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     const closeOnOutsidePointerDown = (event: PointerEvent) => {
@@ -78,6 +81,16 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
     window.history.replaceState(null, "", url);
   }, [initialManager]);
 
+  useEffect(() => {
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const updateStandaloneState = () => setIsStandalone(standaloneQuery.matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+    const captureInstallPrompt = (event: Event) => { event.preventDefault(); setDeferredInstallPrompt(event as BeforeInstallPromptEvent); };
+    updateStandaloneState();
+    standaloneQuery.addEventListener("change", updateStandaloneState);
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
+    return () => { standaloneQuery.removeEventListener("change", updateStandaloneState); window.removeEventListener("beforeinstallprompt", captureInstallPrompt); };
+  }, []);
+
   function openModal(modal: Exclude<ModalName, null>) {
     if (menuRef.current) menuRef.current.open = false;
     if (modal === "dailyTasks") setDailyTaskIds(new Set(selectedTaskIds));
@@ -87,6 +100,13 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
   function switchModal(modal: Exclude<ModalName, null>) {
     setActiveModal(null);
     window.requestAnimationFrame(() => setActiveModal(modal));
+  }
+
+  async function installApp() {
+    if (!deferredInstallPrompt) return;
+    await deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    setDeferredInstallPrompt(null);
   }
 
   return <>
@@ -103,6 +123,7 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
         <Button className="w-full justify-start" onClick={() => openModal("task")} role="menuitem" size="sm" type="button" variant="ghost"><ListTodo aria-hidden="true" size={16}/>Edit tasks</Button>
         <Button className="w-full justify-start" onClick={() => openModal("reward")} role="menuitem" size="sm" type="button" variant="ghost"><Gift aria-hidden="true" size={16}/>Edit rewards</Button>
         <Button className="w-full justify-start" onClick={() => openModal("dailyTasks")} role="menuitem" size="sm" type="button" variant="ghost"><CalendarCheck2 aria-hidden="true" size={16}/>Set daily tasks</Button>
+        <Button className="w-full justify-start" onClick={() => openModal("install")} role="menuitem" size="sm" type="button" variant="ghost"><Download aria-hidden="true" size={16}/>Install app</Button>
         <div className="my-2 border-t border-emerald-100"/>
         <Button className="w-full justify-start text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => openModal("resetWeek")} role="menuitem" size="sm" type="button" variant="ghost"><RotateCcw aria-hidden="true" size={16}/>Reset this week</Button>
         <div className="my-2 border-t border-emerald-100"/>
@@ -164,6 +185,10 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
     <WorkspaceModal active={activeModal === "resetWeek"} onClose={() => setActiveModal(null)} title="Reset this week">
       <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">This replaces this week&apos;s displayed balance, received points, redeemed points, and activity. New activity will start from these values.</p>
       <form action={resetWeeklyPoints} className="mt-5 grid gap-4"><input name="childId" type="hidden" value={childId}/><label className="grid gap-1 text-sm font-medium text-slate-700">Remaining points<Input defaultValue={pointSummary.balance} name="remainingPoints" required type="number"/></label><div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium text-slate-700">Received this week<Input defaultValue={pointSummary.receivedThisWeek} min="0" name="receivedPoints" required type="number"/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Redeemed this week<Input defaultValue={pointSummary.redeemedThisWeek} min="0" name="redeemedPoints" required type="number"/></label></div><label className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-900"><input className="mt-0.5" name="confirmReset" required type="checkbox"/><span>I understand these values overwrite this week&apos;s existing points and activity.</span></label><Button type="submit" variant="destructive">Overwrite this week</Button></form>
+    </WorkspaceModal>
+
+    <WorkspaceModal active={activeModal === "install"} onClose={() => setActiveModal(null)} title="Install SmartPoints">
+      {isStandalone ? <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-3 text-sm font-medium text-emerald-900">SmartPoints is already installed on this device.</p> : deferredInstallPrompt ? <><p className="mt-2 text-sm text-slate-600">Install SmartPoints for a full-screen, app-like experience.</p><Button className="mt-5 w-full" onClick={() => void installApp()} type="button"><Download aria-hidden="true" size={18}/>Install app</Button></> : <><p className="mt-2 text-sm text-slate-600">On iPhone, add SmartPoints directly to your Home Screen.</p><ol className="mt-5 grid gap-3 text-sm text-slate-700"><li className="flex items-center gap-3"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-100 font-bold text-emerald-700">1</span><span>Open this page in <strong>Safari</strong>.</span></li><li className="flex items-center gap-3"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-100 font-bold text-emerald-700">2</span><span>Tap <Share aria-label="Share" className="mx-1 inline" size={16}/> Share.</span></li><li className="flex items-center gap-3"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-100 font-bold text-emerald-700">3</span><span>Choose <SquarePlus aria-hidden="true" className="mx-1 inline" size={16}/> <strong>Add to Home Screen</strong>.</span></li></ol></>}
     </WorkspaceModal>
 
     <WorkspaceModal active={activeModal === "family"} onClose={() => setActiveModal(null)} title="Manage family">
