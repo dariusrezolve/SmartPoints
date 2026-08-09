@@ -2,7 +2,7 @@
 
 ## Customer-visible state
 
-In the linked hosted development project, an authenticated parent can create, select, rename, and archive child profiles; edit the shared household time zone; add starter or custom tasks; tap a task to earn points; undo a completion; add reusable rewards; and redeem a reward even when the balance becomes negative. The workspace displays the household current day, balance, and recent activity. This is not production-deployed or production-configured.
+In the linked hosted Supabase project, an authenticated parent can create, select, rename, and archive child profiles; edit the shared household time zone; add starter or custom tasks; tap a task to earn points; undo a completion; add reusable rewards; and redeem a reward even when the balance becomes negative. The workspace displays the household current day, balance, and recent activity. A public Vercel production deployment is available for private-beta validation; a dedicated production backend, custom domain, and production email configuration remain pending.
 
 ## Important limitations
 

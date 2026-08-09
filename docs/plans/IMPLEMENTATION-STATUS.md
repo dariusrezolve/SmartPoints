@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-05 — Confirmed weekly point reset verified.
+2026-08-05 — SmartPoints production deployed to Vercel with a WayWeGo-style guarded workflow; Vercel Authentication is disabled and anonymous sign-in/health access is verified.
 
 ## Current position
 
@@ -17,6 +17,9 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 01-mvp-core | F1 — Next.js and Supabase foundation | Complete: see `docs/plans/01-mvp-core/task-01-result.md`. |
 | 01-mvp-core | F2 — Parent settings and child profiles | Complete: see `docs/plans/01-mvp-core/task-02-result.md`. |
 | 01-mvp-core | F3–F5 — Basic points workspace vertical slice | Complete for the requested basic UI: see `docs/plans/01-mvp-core/task-03-result.md`. Remaining management and week-navigation polish stays in the MVP plan. |
+| 02-iphone-offline-pwa | F1 — PWA foundation | Complete: see `docs/plans/02-iphone-offline-pwa/task-01-result.md`. |
+| 02-iphone-offline-pwa | F2 — iPhone-first workspace | Complete: see `docs/plans/02-iphone-offline-pwa/task-02-result.md`. |
+| 02-iphone-offline-pwa | F3 — Scoped offline snapshot | Complete: see `docs/plans/02-iphone-offline-pwa/task-03-result.md`. |
 
 ## Verified state
 
@@ -35,12 +38,14 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Required before the next task can be fully verified
 
-- Hosted Supabase project and email/recovery configuration before production verification; do not add secrets to the repository.
-- Hosted Supabase project and email/recovery configuration before production verification; do not add secrets to the repository.
+- Dedicated production Supabase project and email/recovery configuration before production verification; do not add secrets to the repository.
+- Resolve and verify the reported child-profile query error through a browser-authenticated production session.
 
 ## Next task
 
-1. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
+1. F4 — Add idempotent queued daily actions and ordered reconciliation under `docs/plans/02-iphone-offline-pwa/plan.md`.
+2. Resolve and verify the browser-authenticated child-profile query error in production.
+3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
 
 ## Resume protocol
 

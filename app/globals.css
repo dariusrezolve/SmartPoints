@@ -7,3 +7,13 @@ body { margin: 0; background: #f8fafc; color: #0f172a; }
 body:has(.workspace-page) { background: radial-gradient(circle at 8% 8%, rgb(224 242 254 / .8), transparent 29rem), radial-gradient(circle at 92% 18%, rgb(237 233 254 / .7), transparent 32rem), linear-gradient(145deg, #f8fafc 0%, #f5f8ff 52%, #faf8ff 100%); }
 a { color: inherit; text-decoration: none; }
 label { display: grid; gap: .4rem; color: #334155; font-size: .875rem; font-weight: 600; }
+
+button, input, select, textarea { touch-action: manipulation; }
+
+@keyframes task-tile-pulse { 0% { transform: scale(1); } 35% { transform: scale(.92); } 70% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.task-tile-pulse { animation: task-tile-pulse .55s ease-out; }
+
+@media (max-width: 639px) {
+  .workspace-page { padding-bottom: calc(2.5rem + env(safe-area-inset-bottom)); padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); padding-top: max(1rem, env(safe-area-inset-top)); }
+  dialog { padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important; padding-left: max(1rem, env(safe-area-inset-left)) !important; padding-right: max(1rem, env(safe-area-inset-right)) !important; }
+}

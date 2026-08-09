@@ -36,8 +36,10 @@ The linked command defaults to a dry run. It applies only migration files not ye
 
 For this hosted-development setup, `npm run dev` first runs the linked migration runner with `--apply`, then starts Next.js. It is idempotent: after the first successful apply, later starts find no pending migration files. This convenience is intentionally for the linked development project, not a production deployment workflow.
 
+Vercel preview and production deployments use the guarded `npm run deploy:vercel` workflow. It runs type checking, tests, and a production build before upload; migrations remain opt-in through `DEPLOY_MIGRATIONS=1`. The repository-local Vercel project link is ignored, and each environment contains only the public Supabase URL and publishable key. Vercel Authentication is disabled so testers can open the URLs without a Vercel account. Production currently uses the linked hosted Supabase project.
+
 ## Deferred decisions
 
 - Data model and retention policy.
 - AI provider, model contract, evaluation, cost, and privacy policy.
-- Hosted deployment, domain, and production email configuration.
+- Dedicated production Supabase project, domain, and production email configuration. The public Vercel preview uses the linked hosted project only for private-beta validation.

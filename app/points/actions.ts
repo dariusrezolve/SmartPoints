@@ -44,16 +44,60 @@ export async function createTask(formData: FormData) {
   done(childId);
 }
 
+export async function updateTask(formData: FormData) {
+  const childId = value(formData, "childId");
+  const taskId = value(formData, "taskId");
+  await parentId();
+  let name: string;
+  let points: number;
+  const icon = value(formData, "icon");
+  try {
+    name = normalizeTitle(value(formData, "name"), "Task");
+    points = normalizePointValue(value(formData, "points"), "Points");
+    if (!isTaskIcon(icon)) throw new Error("Choose a valid task icon.");
+  } catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid task."); }
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("tasks").update({ name, points, icon }).eq("id", taskId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
+  if (error || !data) fail(childId, "Unable to update task.");
+  done(childId);
+}
+
+export async function archiveTask(formData: FormData) {
+  const childId = value(formData, "childId");
+  const taskId = value(formData, "taskId");
+  await parentId();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("tasks").update({ is_active: false }).eq("id", taskId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
+  if (error || !data) fail(childId, "Unable to archive task.");
+  done(childId);
+}
+
 export async function createReward(formData: FormData) {
   const childId = value(formData, "childId");
   await parentId();
   let name: string;
   let cost: number;
-  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); }
+  const icon = value(formData, "icon") || "Star";
+  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
   catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward."); }
   const supabase = await createClient();
-  const { error } = await supabase.from("rewards").insert({ child_id: childId, name, cost });
+  const { error } = await supabase.from("rewards").insert({ child_id: childId, name, cost, icon });
   if (error) fail(childId, "Unable to add reward.");
+  done(childId);
+}
+
+export async function updateReward(formData: FormData) {
+  const childId = value(formData, "childId");
+  const rewardId = value(formData, "rewardId");
+  await parentId();
+  let name: string;
+  let cost: number;
+  const icon = value(formData, "icon");
+  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
+  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward."); }
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("rewards").update({ name, cost, icon }).eq("id", rewardId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
+  if (error || !data) fail(childId, "Unable to update reward.");
   done(childId);
 }
 

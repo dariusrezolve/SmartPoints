@@ -33,25 +33,27 @@ export async function signIn(formData: FormData) {
     redirect(`/sign-in?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/");
+  const next = typeof formData.get("next") === "string" && String(formData.get("next")).startsWith("/") ? String(formData.get("next")) : "/";
+  redirect(next);
 }
 
 export async function signUp(formData: FormData) {
   const email = getRequiredField(formData, "email");
   const password = getRequiredField(formData, "password");
+  const next = typeof formData.get("next") === "string" && String(formData.get("next")).startsWith("/") ? String(formData.get("next")) : "/";
   const supabase = await createClient();
   const origin = await getOrigin();
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${origin}/auth/confirm` },
+    options: { emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}` },
   });
 
   if (error) {
     redirect(`/sign-up?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/sign-in?message=Check your email to confirm your account before signing in.");
+  redirect(`/sign-in?message=${encodeURIComponent("Check your email to confirm your account before signing in.")}&next=${encodeURIComponent(next)}`);
 }
 
 export async function requestPasswordReset(formData: FormData) {

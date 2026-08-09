@@ -6,7 +6,7 @@ import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 type HomePageProps = {
-  searchParams: Promise<{ child?: string; error?: string }>;
+  searchParams: Promise<{ child?: string; error?: string; week?: string }>;
 };
 
 export default async function HomePage({ searchParams }: HomePageProps) {
@@ -34,10 +34,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const [{ data: children, error: childrenError }, { data: settings }] = await Promise.all([
     supabase
       .from("children")
-      .select("id, display_name")
+      .select("id, display_name, parent_id")
       .is("archived_at", null)
       .order("created_at", { ascending: true }),
-    supabase.from("parent_settings").select("time_zone").maybeSingle(),
+    supabase.from("parent_settings").select("id, time_zone"),
   ]);
 
   if (childrenError) {
@@ -51,20 +51,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     );
   }
 
-  const { child: selectedChildId, error } = await searchParams;
+  const { child: selectedChildId, error, week } = await searchParams;
   const activeChildren = children ?? [];
   const selectedChild = activeChildren.find((child) => child.id === selectedChildId) ?? activeChildren[0] ?? null;
-  const timeZone = settings?.time_zone ?? "UTC";
+  const timeZone = settings?.find((setting) => setting.id === selectedChild?.parent_id)?.time_zone ?? "UTC";
   const currentDate = getCurrentLocalDate(timeZone);
   const currentWeekStart = getWeekStart(currentDate);
+  const viewedWeekStart = week && /^\d{4}-\d{2}-\d{2}$/.test(week) && getWeekStart(week) === week ? week : currentWeekStart;
   const [{ data: tasks }, { data: rewards }, { data: weeklyTaskPlans }, { data: pointResets }] = selectedChild ? await Promise.all([
     supabase.from("tasks").select("id, name, points, icon").eq("child_id", selectedChild.id).eq("is_active", true).order("created_at"),
-    supabase.from("rewards").select("id, name, cost").eq("child_id", selectedChild.id).eq("is_active", true).order("created_at"),
-    supabase.from("weekly_task_plans").select("task_id").eq("child_id", selectedChild.id).eq("week_start", currentWeekStart),
+    supabase.from("rewards").select("id, name, cost, icon").eq("child_id", selectedChild.id).eq("is_active", true).order("created_at"),
+    supabase.from("weekly_task_plans").select("task_id").eq("child_id", selectedChild.id).eq("week_start", viewedWeekStart),
     supabase.from("weekly_point_resets").select("week_start, remaining_points, received_points, redeemed_points, reset_at").eq("child_id", selectedChild.id).order("reset_at", { ascending: false }).limit(1),
   ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
   const latestReset = pointResets?.[0] ?? null;
-  let recentActivityQuery = supabase.from("point_events").select("id, event_type, point_delta, effective_date, task_id, reward_id, reversal_of, created_at").eq("child_id", selectedChild?.id ?? "").order("created_at", { ascending: false }).limit(20);
+  let recentActivityQuery = supabase.from("point_events").select("id, event_type, point_delta, effective_date, task_id, reward_id, reversal_of, created_at").eq("child_id", selectedChild?.id ?? "").order("created_at", { ascending: false }).limit(100);
   if (latestReset) recentActivityQuery = recentActivityQuery.gt("created_at", latestReset.reset_at);
   const [{ data: events }, { data: pointSummaryEvents }] = selectedChild ? await Promise.all([
     recentActivityQuery,
@@ -78,7 +79,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <>
       {error ? <p className="mx-auto mt-4 w-full max-w-5xl rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{error}</p> : null}
-      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={currentWeekStart} pointSummary={pointSummary} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} /> : null}
+      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} isCurrentWeek={viewedWeekStart === currentWeekStart} parentId={claims.claims.sub} pointSummary={pointSummary} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} /> : null}
     </>
   );
 }

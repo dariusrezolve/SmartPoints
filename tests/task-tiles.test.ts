@@ -7,5 +7,8 @@ describe("daily task tiles", () => {
 
     expect(component).toContain("<TaskIcon");
     expect(component).toContain('role="tooltip"');
+    expect(component).toContain("lastTappedTaskId");
+    expect(component).toContain("task-tile-pulse");
+    expect(component).toContain("Points added: +");
   });
 });

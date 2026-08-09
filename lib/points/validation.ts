@@ -45,6 +45,12 @@ export function getWeekStart(date: string): string {
   return parsedDate.toISOString().slice(0, 10);
 }
 
+export function shiftWeek(weekStart: string, offset: number): string {
+  const value = new Date(`${weekStart}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + offset * 7);
+  return value.toISOString().slice(0, 10);
+}
+
 type PointEventSummaryInput = { effective_date: string; event_type: string; point_delta: number };
 
 export function getPointSummary(events: PointEventSummaryInput[], currentDate: string) {

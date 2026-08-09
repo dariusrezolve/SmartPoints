@@ -11,9 +11,10 @@ type AuthFormProps = {
   email?: boolean;
   password?: boolean;
   footer: React.ReactNode;
+  next?: string;
 };
 
-export function AuthForm({ action, submitLabel, error, message, email = true, password = true, footer }: AuthFormProps) {
+export function AuthForm({ action, submitLabel, error, message, email = true, password = true, footer, next }: AuthFormProps) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-5 py-10">
       <Card className="w-full p-6 sm:p-8">
@@ -22,6 +23,7 @@ export function AuthForm({ action, submitLabel, error, message, email = true, pa
         {error ? <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">{error}</p> : null}
         {message ? <p className="mt-4 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">{message}</p> : null}
         <form action={action} className="mt-6 grid gap-4">
+          {next ? <input name="next" type="hidden" value={next}/> : null}
           {email ? (
             <label>
               Email

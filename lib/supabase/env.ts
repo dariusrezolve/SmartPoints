@@ -1,10 +1,5 @@
-const requiredPublicVariables = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-] as const;
-
 export function hasSupabaseConfig(): boolean {
-  return requiredPublicVariables.every((variableName) => Boolean(process.env[variableName]));
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 }
 
 export function getSupabaseConfig() {

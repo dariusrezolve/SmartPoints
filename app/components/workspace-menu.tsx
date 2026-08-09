@@ -3,19 +3,22 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from "react";
 import { archiveChild, createChild, renameChild, updateHouseholdTimeZone } from "@/app/children/actions";
-import { createReward, createTask, resetWeeklyPoints, setWeeklyTasks } from "@/app/points/actions";
+import { archiveTask, createReward, createTask, resetWeeklyPoints, setWeeklyTasks, updateReward, updateTask } from "@/app/points/actions";
 import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
 import { Input } from "@/app/components/ui/input";
 import { TaskIcon } from "@/lib/points/task-icons";
 import { starterTasks, taskIconNames, type TaskIconName } from "@/lib/points/validation";
+import { clearOfflineSnapshots } from "@/lib/offline/storage";
+import { createInvitation } from "@/app/invitations/actions";
 
 type Child = { id: string; display_name: string };
 type Task = { id: string; name: string; points: number; icon: TaskIconName };
-type ModalName = "task" | "reward" | "dailyTasks" | "family" | "resetWeek" | null;
+type Reward = { id: string; name: string; cost: number; icon: TaskIconName };
+type ModalName = "task" | "reward" | "dailyTasks" | "family" | "resetWeek" | "share" | null;
 type PointSummary = { balance: number; receivedThisWeek: number; redeemedThisWeek: number };
 
-type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; pointSummary: PointSummary; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string };
+type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; pointSummary: PointSummary; rewards: Reward[]; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string };
 
 function setBrowserTimeZone(event: FormEvent<HTMLFormElement>) {
   const timeZoneField = event.currentTarget.elements.namedItem("timeZone");
@@ -44,10 +47,17 @@ function WorkspaceModal({ active, children, onClose, title }: { active: boolean;
   </dialog>;
 }
 
-export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekStart, pointSummary, selectedTaskIds, taskCatalog, timeZone }: Props) {
+export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekStart, pointSummary, rewards, selectedTaskIds, taskCatalog, timeZone }: Props) {
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [activeModal, setActiveModal] = useState<ModalName>(null);
   const [selectedIcon, setSelectedIcon] = useState<TaskIconName>("CircleCheck");
+  const [selectedRewardIcon, setSelectedRewardIcon] = useState<TaskIconName>("Star");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingReward, setEditingReward] = useState<Reward | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [shareLink, setShareLink] = useState("");
+  const [selectedEditTaskIcon, setSelectedEditTaskIcon] = useState<TaskIconName>("CircleCheck");
+  const [selectedEditRewardIcon, setSelectedEditRewardIcon] = useState<TaskIconName>("Star");
 
   useEffect(() => {
     const closeOnOutsidePointerDown = (event: PointerEvent) => {
@@ -69,27 +79,49 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
         <p className="px-3 pb-2 pt-1 text-xs font-bold uppercase tracking-[0.18em] text-sky-600">Your family</p>
         {childProfiles.map((child) => <Link aria-current={child.id === childId ? "page" : undefined} className={child.id === childId ? "mb-1 block rounded-lg bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800" : "mb-1 block rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"} href={`/?child=${child.id}`} key={child.id} role="menuitem">{child.display_name}</Link>)}
         <Button className="w-full justify-start" onClick={() => openModal("family")} role="menuitem" size="sm" type="button" variant="ghost">Manage family</Button>
+        <Button className="w-full justify-start" onClick={() => openModal("share")} role="menuitem" size="sm" type="button" variant="ghost">Share access</Button>
         <div className="my-2 border-t border-slate-200"/>
         <p className="px-3 pb-2 text-xs font-bold uppercase tracking-[0.18em] text-sky-600">Setup</p>
-        <Button className="w-full justify-start" onClick={() => openModal("task")} role="menuitem" size="sm" type="button" variant="ghost">Add task</Button>
-        <Button className="w-full justify-start" onClick={() => openModal("reward")} role="menuitem" size="sm" type="button" variant="ghost">Add reward</Button>
+        <Link className="mb-1 block rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" href={`/statistics?child=${childId}`} role="menuitem">Statistics</Link>
+        <Button className="w-full justify-start" onClick={() => openModal("task")} role="menuitem" size="sm" type="button" variant="ghost">Edit tasks</Button>
+        <Button className="w-full justify-start" onClick={() => openModal("reward")} role="menuitem" size="sm" type="button" variant="ghost">Edit rewards</Button>
         <Button className="w-full justify-start" onClick={() => openModal("dailyTasks")} role="menuitem" size="sm" type="button" variant="ghost">Set Daily tasks</Button>
         <div className="my-2 border-t border-slate-200"/>
         <Button className="w-full justify-start text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => openModal("resetWeek")} role="menuitem" size="sm" type="button" variant="ghost">Reset this week</Button>
         <div className="my-2 border-t border-slate-200"/>
-        <form action="/auth/sign-out" method="post"><Button className="w-full justify-start" role="menuitem" size="sm" type="submit" variant="ghost">Sign out</Button></form>
+        <form action="/auth/sign-out" method="post" onSubmit={() => { void clearOfflineSnapshots(); }}><Button className="w-full justify-start" role="menuitem" size="sm" type="submit" variant="ghost">Sign out</Button></form>
       </Card>
     </details>
 
-    <WorkspaceModal active={activeModal === "task"} onClose={() => setActiveModal(null)} title="Create a task">
-      <p className="mt-2 text-sm text-slate-500">Add a starter task or make one just for {childName}.</p>
-      <div className="mt-5 flex flex-wrap gap-2">{starterTasks.map((task) => <form action={createTask} key={task.name}><input name="childId" type="hidden" value={childId}/><input name="name" type="hidden" value={task.name}/><input name="points" type="hidden" value={task.points}/><input name="icon" type="hidden" value={task.icon}/><input name="starterKey" type="hidden" value={task.name.toLowerCase().replaceAll(" ", "-")}/><Button size="sm" type="submit" variant="outline"><TaskIcon aria-hidden="true" name={task.icon} size={16}/>Add {task.name} (+{task.points})</Button></form>)}</div>
-      <form action={createTask} className="mt-6 grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-[1fr_7rem_auto] sm:items-end"><input name="childId" type="hidden" value={childId}/><input name="icon" type="hidden" value={selectedIcon}/><label className="grid gap-1 text-sm font-medium text-slate-700">Name<Input maxLength={80} name="name" required/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Points<Input min="1" name="points" required type="number"/></label><Button type="submit">Create task</Button><fieldset className="sm:col-span-3"><legend className="text-sm font-medium text-slate-700">Icon</legend><div className="mt-2 flex flex-wrap gap-2">{taskIconNames.map((icon) => <Button aria-label={`Use ${icon} icon`} aria-pressed={selectedIcon === icon} className={selectedIcon === icon ? "border-sky-500 bg-sky-50 text-sky-700" : undefined} key={icon} onClick={() => setSelectedIcon(icon)} size="icon" type="button" variant="outline"><TaskIcon aria-hidden="true" name={icon} size={19}/></Button>)}</div></fieldset></form>
+    <WorkspaceModal active={activeModal === "task"} onClose={() => setActiveModal(null)} title="Edit tasks">
+      <p className="mt-2 text-sm text-slate-500">Update a task&apos;s name, points, or icon. Archiving removes it from daily tasks and keeps past points intact.</p>
+      <section className="mt-5 grid gap-2">{taskCatalog.map((task) => <article className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2" key={task.id}><span className="flex items-center gap-3"><TaskIcon aria-hidden="true" name={task.icon} size={24}/><span><strong className="block text-sm text-slate-900">{task.name}</strong><small className="text-slate-500">+{task.points} points</small></span></span><span className="flex gap-1"><Button onClick={() => { setSelectedEditTaskIcon(task.icon); setEditingTask(task); }} size="sm" type="button" variant="outline">Edit</Button><Button onClick={() => setTaskToDelete(task)} size="sm" type="button" variant="ghost">Delete</Button></span></article>)}</section>
+      {taskCatalog.length === 0 ? <p className="mt-5 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">No active tasks yet. Create one below.</p> : null}
+      <section className="mt-6 border-t border-slate-200 pt-5"><h3 className="text-sm font-semibold text-slate-900">Create a task</h3><p className="mt-1 text-sm text-slate-500">Add a starter task or make one just for {childName}.</p><div className="mt-4 flex flex-wrap gap-2">{starterTasks.map((task) => <form action={createTask} key={task.name}><input name="childId" type="hidden" value={childId}/><input name="name" type="hidden" value={task.name}/><input name="points" type="hidden" value={task.points}/><input name="icon" type="hidden" value={task.icon}/><input name="starterKey" type="hidden" value={task.name.toLowerCase().replaceAll(" ", "-")}/><Button size="sm" type="submit" variant="outline"><TaskIcon aria-hidden="true" name={task.icon} size={16}/>Add {task.name} (+{task.points})</Button></form>)}</div>
+      <form action={createTask} className="mt-5 grid gap-3 sm:grid-cols-[1fr_7rem_auto] sm:items-end"><input name="childId" type="hidden" value={childId}/><input name="icon" type="hidden" value={selectedIcon}/><label className="grid gap-1 text-sm font-medium text-slate-700">Name<Input maxLength={80} name="name" required/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Points<Input min="1" name="points" required type="number"/></label><Button type="submit">Create task</Button><fieldset className="sm:col-span-3"><legend className="text-sm font-medium text-slate-700">Icon</legend><div className="mt-2 flex flex-wrap gap-2">{taskIconNames.map((icon) => <Button aria-label={`Use ${icon} icon`} aria-pressed={selectedIcon === icon} className={selectedIcon === icon ? "border-sky-500 bg-sky-50 text-sky-700" : undefined} key={icon} onClick={() => setSelectedIcon(icon)} size="icon" type="button" variant="outline"><TaskIcon aria-hidden="true" name={icon} size={19}/></Button>)}</div></fieldset></form></section>
     </WorkspaceModal>
 
-    <WorkspaceModal active={activeModal === "reward"} onClose={() => setActiveModal(null)} title="Create a reward">
+    <WorkspaceModal active={activeModal === "reward"} onClose={() => setActiveModal(null)} title="Edit rewards">
       <p className="mt-2 text-sm text-slate-500">Rewards are reusable and can be redeemed before points are earned.</p>
-      <form action={createReward} className="mt-6 grid gap-3 sm:grid-cols-[1fr_7rem_auto] sm:items-end"><input name="childId" type="hidden" value={childId}/><label className="grid gap-1 text-sm font-medium text-slate-700">Name<Input maxLength={80} name="name" required/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Cost<Input min="1" name="cost" required type="number"/></label><Button type="submit">Create reward</Button></form>
+      <section className="mt-5 grid gap-2">{rewards.map((reward) => <article className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2" key={reward.id}><span className="flex items-center gap-3"><TaskIcon aria-hidden="true" name={reward.icon} size={24}/><span><strong className="block text-sm text-slate-900">{reward.name}</strong><small className="text-slate-500">{reward.cost} points</small></span></span><Button onClick={() => { setSelectedEditRewardIcon(reward.icon); setEditingReward(reward); }} size="sm" type="button" variant="outline">Edit</Button></article>)}</section>
+      {rewards.length === 0 ? <p className="mt-5 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">No rewards yet. Create one below.</p> : null}
+      <section className="mt-6 border-t border-slate-200 pt-5"><h3 className="text-sm font-semibold text-slate-900">Create a reward</h3><form action={createReward} className="mt-4 grid gap-3 sm:grid-cols-[1fr_7rem_auto] sm:items-end"><input name="childId" type="hidden" value={childId}/><input name="icon" type="hidden" value={selectedRewardIcon}/><label className="grid gap-1 text-sm font-medium text-slate-700">Name<Input maxLength={80} name="name" required/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Cost<Input min="1" name="cost" required type="number"/></label><Button type="submit">Create reward</Button><fieldset className="sm:col-span-3"><legend className="text-sm font-medium text-slate-700">Icon</legend><div className="mt-2 flex flex-wrap gap-2">{taskIconNames.map((icon) => <Button aria-label={`Use ${icon} reward icon`} aria-pressed={selectedRewardIcon === icon} className={selectedRewardIcon === icon ? "border-sky-500 bg-sky-50 text-sky-700" : undefined} key={icon} onClick={() => setSelectedRewardIcon(icon)} size="icon" type="button" variant="outline"><TaskIcon aria-hidden="true" name={icon} size={19}/></Button>)}</div></fieldset></form></section>
+    </WorkspaceModal>
+
+    <WorkspaceModal active={editingTask !== null} onClose={() => setEditingTask(null)} title="Edit task">
+      {editingTask ? <form action={updateTask} className="mt-5 grid gap-4"><input name="childId" type="hidden" value={childId}/><input name="taskId" type="hidden" value={editingTask.id}/><label>Name<Input defaultValue={editingTask.name} maxLength={80} name="name" required/></label><label>Points<Input defaultValue={editingTask.points} min="1" name="points" required type="number"/></label><label>Icon<div className="mt-1 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-sky-50 text-sky-700"><TaskIcon aria-label={`Selected ${selectedEditTaskIcon} icon`} name={selectedEditTaskIcon} size={23}/></span><select className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800" name="icon" onChange={(event) => setSelectedEditTaskIcon(event.currentTarget.value as TaskIconName)} value={selectedEditTaskIcon}>{taskIconNames.map((icon) => <option key={icon} value={icon}>{icon}</option>)}</select></div></label><Button type="submit">Save task</Button></form> : null}
+    </WorkspaceModal>
+
+    <WorkspaceModal active={editingReward !== null} onClose={() => setEditingReward(null)} title="Edit reward">
+      {editingReward ? <form action={updateReward} className="mt-5 grid gap-4"><input name="childId" type="hidden" value={childId}/><input name="rewardId" type="hidden" value={editingReward.id}/><label>Name<Input defaultValue={editingReward.name} maxLength={80} name="name" required/></label><label>Cost<Input defaultValue={editingReward.cost} min="1" name="cost" required type="number"/></label><label>Icon<div className="mt-1 flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-violet-50 text-violet-700"><TaskIcon aria-label={`Selected ${selectedEditRewardIcon} icon`} name={selectedEditRewardIcon} size={23}/></span><select className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800" name="icon" onChange={(event) => setSelectedEditRewardIcon(event.currentTarget.value as TaskIconName)} value={selectedEditRewardIcon}>{taskIconNames.map((icon) => <option key={icon} value={icon}>{icon}</option>)}</select></div></label><Button type="submit">Save reward</Button></form> : null}
+    </WorkspaceModal>
+
+    <WorkspaceModal active={taskToDelete !== null} onClose={() => setTaskToDelete(null)} title="Delete task?">
+      {taskToDelete ? <><p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">Delete {taskToDelete.name}? It will be removed from daily tasks. Past points will remain in history.</p><div className="mt-5 flex justify-end gap-2"><Button onClick={() => setTaskToDelete(null)} type="button" variant="outline">Cancel</Button><form action={archiveTask}><input name="childId" type="hidden" value={childId}/><input name="taskId" type="hidden" value={taskToDelete.id}/><Button type="submit" variant="destructive">Delete task</Button></form></div></> : null}
+    </WorkspaceModal>
+
+    <WorkspaceModal active={activeModal === "share"} onClose={() => setActiveModal(null)} title="Share access">
+      <p className="mt-2 text-sm text-slate-600">Create a one-time link for another parent. It is valid for seven days and only works with this email address.</p><form className="mt-5 grid gap-3" onSubmit={async (event) => { event.preventDefault(); setShareLink(await createInvitation(new FormData(event.currentTarget))); }}><input name="childId" type="hidden" value={childId}/><label>Email address<Input name="email" required type="email"/></label><Button type="submit">Create share link</Button></form>{shareLink ? <div className="mt-4 rounded-xl bg-sky-50 p-3"><p className="break-all text-xs text-sky-900">{shareLink}</p><Button className="mt-3" onClick={() => void navigator.clipboard.writeText(shareLink)} size="sm" type="button" variant="outline">Copy link</Button></div> : null}
     </WorkspaceModal>
 
     <WorkspaceModal active={activeModal === "dailyTasks"} onClose={() => setActiveModal(null)} title="Set daily tasks">
