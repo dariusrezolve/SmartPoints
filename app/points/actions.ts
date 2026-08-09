@@ -72,9 +72,9 @@ export async function archiveTask(formData: FormData) {
   const taskId = value(formData, "taskId");
   await parentId();
   const supabase = await createClient();
-  const { data, error } = await supabase.from("tasks").update({ is_active: false }).eq("id", taskId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
-  if (error || !data) fail(childId, "Unable to archive task.");
-  done(childId);
+  const { error } = await supabase.rpc("archive_task", { p_child_id: childId, p_task_id: taskId });
+  if (error) fail(childId, error.code === "22023" ? error.message : "Unable to archive task.");
+  doneWithMessage(childId, "Task deleted.");
 }
 
 export async function createReward(formData: FormData) {
