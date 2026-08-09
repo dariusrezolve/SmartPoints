@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getWeekStart, isTaskIcon, normalizePointValue, normalizeTitle } from "@/lib/points/validation";
 import { createClient } from "@/lib/supabase/server";
 
+type ManagerName = "tasks" | "rewards";
+
 function value(formData: FormData, name: string): string {
   const item = formData.get(name);
   return typeof item === "string" ? item : "";
@@ -17,18 +19,25 @@ async function parentId(): Promise<string> {
   return data.claims.sub;
 }
 
-function fail(childId: string, message: string): never {
-  redirect(`/?child=${encodeURIComponent(childId)}&error=${encodeURIComponent(message)}`);
+function actionPath(childId: string, message?: string, manager?: ManagerName, isError = false): string {
+  const params = new URLSearchParams({ child: childId });
+  if (message) params.set(isError ? "error" : "message", message);
+  if (manager) params.set("manage", manager);
+  return `/?${params.toString()}`;
 }
 
-function done(childId: string): never {
-  revalidatePath("/");
-  redirect(`/?child=${encodeURIComponent(childId)}`);
+function fail(childId: string, message: string, manager?: ManagerName): never {
+  redirect(actionPath(childId, message, manager, true));
 }
 
-function doneWithMessage(childId: string, message: string): never {
+function done(childId: string, manager?: ManagerName): never {
   revalidatePath("/");
-  redirect(`/?child=${encodeURIComponent(childId)}&message=${encodeURIComponent(message)}`);
+  redirect(actionPath(childId, undefined, manager));
+}
+
+function doneWithMessage(childId: string, message: string, manager?: ManagerName): never {
+  revalidatePath("/");
+  redirect(actionPath(childId, message, manager));
 }
 
 export async function createTask(formData: FormData) {
@@ -42,11 +51,11 @@ export async function createTask(formData: FormData) {
     points = normalizePointValue(value(formData, "points"), "Points");
     if (!isTaskIcon(icon)) throw new Error("Choose a valid task icon.");
   }
-  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid task."); }
+  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid task.", "tasks"); }
   const supabase = await createClient();
   const { error } = await supabase.from("tasks").insert({ child_id: childId, name, points, icon, starter_key: value(formData, "starterKey") || null });
-  if (error) fail(childId, "Unable to add task.");
-  done(childId);
+  if (error) fail(childId, "Unable to add task.", "tasks");
+  done(childId, "tasks");
 }
 
 export async function updateTask(formData: FormData) {
@@ -60,11 +69,11 @@ export async function updateTask(formData: FormData) {
     name = normalizeTitle(value(formData, "name"), "Task");
     points = normalizePointValue(value(formData, "points"), "Points");
     if (!isTaskIcon(icon)) throw new Error("Choose a valid task icon.");
-  } catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid task."); }
+  } catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid task.", "tasks"); }
   const supabase = await createClient();
   const { data, error } = await supabase.from("tasks").update({ name, points, icon }).eq("id", taskId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
-  if (error || !data) fail(childId, "Unable to update task.");
-  done(childId);
+  if (error || !data) fail(childId, "Unable to update task.", "tasks");
+  done(childId, "tasks");
 }
 
 export async function archiveTask(formData: FormData) {
@@ -73,8 +82,8 @@ export async function archiveTask(formData: FormData) {
   await parentId();
   const supabase = await createClient();
   const { error } = await supabase.rpc("archive_task", { p_child_id: childId, p_task_id: taskId });
-  if (error) fail(childId, error.code === "22023" ? error.message : "Unable to archive task.");
-  doneWithMessage(childId, "Task deleted.");
+  if (error) fail(childId, error.code === "22023" ? error.message : "Unable to archive task.", "tasks");
+  doneWithMessage(childId, "Task deleted.", "tasks");
 }
 
 export async function createReward(formData: FormData) {
@@ -84,11 +93,11 @@ export async function createReward(formData: FormData) {
   let cost: number;
   const icon = value(formData, "icon") || "Star";
   try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
-  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward."); }
+  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward.", "rewards"); }
   const supabase = await createClient();
   const { error } = await supabase.from("rewards").insert({ child_id: childId, name, cost, icon });
-  if (error) fail(childId, "Unable to add reward.");
-  done(childId);
+  if (error) fail(childId, "Unable to add reward.", "rewards");
+  done(childId, "rewards");
 }
 
 export async function updateReward(formData: FormData) {
@@ -99,11 +108,21 @@ export async function updateReward(formData: FormData) {
   let cost: number;
   const icon = value(formData, "icon");
   try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
-  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward."); }
+  catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward.", "rewards"); }
   const supabase = await createClient();
   const { data, error } = await supabase.from("rewards").update({ name, cost, icon }).eq("id", rewardId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
-  if (error || !data) fail(childId, "Unable to update reward.");
-  done(childId);
+  if (error || !data) fail(childId, "Unable to update reward.", "rewards");
+  done(childId, "rewards");
+}
+
+export async function archiveReward(formData: FormData) {
+  const childId = value(formData, "childId");
+  const rewardId = value(formData, "rewardId");
+  await parentId();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("archive_reward", { p_child_id: childId, p_reward_id: rewardId });
+  if (error) fail(childId, error.code === "22023" ? error.message : "Unable to archive reward.", "rewards");
+  doneWithMessage(childId, "Reward deleted.", "rewards");
 }
 
 export async function setWeeklyTasks(formData: FormData) {

@@ -34,4 +34,11 @@ describe("WayWeGo UI framework", () => {
     expect(input).toContain("focus:border-emerald-500");
     expect(input).toContain("focus:ring-emerald-100");
   });
+
+  it("gives the current week label a clearly readable size", async () => {
+    const workspace = await readFile(new URL("../app/components/points-workspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain("text-sm font-bold uppercase");
+    expect(workspace).toContain("sm:text-base");
+  });
 });

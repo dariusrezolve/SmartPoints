@@ -6,7 +6,7 @@ import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 type HomePageProps = {
-  searchParams: Promise<{ child?: string; error?: string; message?: string; week?: string }>;
+  searchParams: Promise<{ child?: string; error?: string; manage?: string; message?: string; week?: string }>;
 };
 
 export default async function HomePage({ searchParams }: HomePageProps) {
@@ -51,7 +51,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     );
   }
 
-  const { child: selectedChildId, error, message, week } = await searchParams;
+  const { child: selectedChildId, error, manage, message, week } = await searchParams;
   const activeChildren = children ?? [];
   const selectedChild = activeChildren.find((child) => child.id === selectedChildId) ?? activeChildren[0] ?? null;
   const timeZone = settings?.find((setting) => setting.id === selectedChild?.parent_id)?.time_zone ?? "UTC";
@@ -79,7 +79,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <>
       {error ? <p className="mx-auto mt-4 w-full max-w-5xl rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{error}</p> : null}
-      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} initialNotice={message} isCurrentWeek={viewedWeekStart === currentWeekStart} parentId={claims.claims.sub} pointSummary={pointSummary} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} /> : null}
+      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} initialManager={manage === "tasks" || manage === "rewards" ? manage : undefined} initialNotice={message} isCurrentWeek={viewedWeekStart === currentWeekStart} key={`${selectedChild.id}:${manage ?? "dashboard"}`} parentId={claims.claims.sub} pointSummary={pointSummary} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} /> : null}
     </>
   );
 }
