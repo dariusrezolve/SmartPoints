@@ -18,7 +18,12 @@ export function normalizePointValue(value: string | undefined, label: string): n
   return points;
 }
 
-export const taskIconNames = ["Bath", "BedDouble", "BookOpen", "CircleCheck", "Gamepad2", "Shirt", "Sparkles", "Star", "ToyBrick", "Utensils"] as const;
+export const taskIconNames = [
+  "Apple", "Backpack", "Bath", "BedDouble", "Bike", "BookOpen", "BrushCleaning", "CakeSlice",
+  "Cat", "CircleCheck", "Dog", "Dumbbell", "Footprints", "Gamepad2", "Heart", "House", "Medal",
+  "MoonStar", "Music2", "Palette", "PartyPopper", "School", "Shirt", "Smile", "Sparkles", "Star",
+  "Sun", "ToyBrick", "Trees", "Trophy", "Utensils", "WashingMachine",
+] as const;
 export type TaskIconName = (typeof taskIconNames)[number];
 
 export function isTaskIcon(value: string): value is TaskIconName {

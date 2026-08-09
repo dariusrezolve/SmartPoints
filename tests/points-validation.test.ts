@@ -18,6 +18,11 @@ describe("points workspace validation", () => {
 
   it("accepts only the curated task icon names", () => {
     expect(isTaskIcon("Sparkles")).toBe(true);
+    expect(isTaskIcon("Backpack")).toBe(true);
+    expect(isTaskIcon("Dog")).toBe(true);
+    expect(isTaskIcon("Music2")).toBe(true);
+    expect(isTaskIcon("Trophy")).toBe(true);
+    expect(isTaskIcon("WashingMachine")).toBe(true);
     expect(isTaskIcon("arbitrary-icon")).toBe(false);
   });
 });

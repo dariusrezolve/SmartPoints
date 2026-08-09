@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-05 — SmartPoints production deployed to Vercel with a WayWeGo-style guarded workflow; Vercel Authentication is disabled and anonymous sign-in/health access is verified.
+2026-08-09 — SmartPoints received a modern iPhone-first visual refresh and a one-click, duplicate-safe daily-task list editor; the release passed lint, typecheck, 33 tests, and a production build before Vercel deployment.
 
 ## Current position
 
@@ -20,6 +20,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 02-iphone-offline-pwa | F1 — PWA foundation | Complete: see `docs/plans/02-iphone-offline-pwa/task-01-result.md`. |
 | 02-iphone-offline-pwa | F2 — iPhone-first workspace | Complete: see `docs/plans/02-iphone-offline-pwa/task-02-result.md`. |
 | 02-iphone-offline-pwa | F3 — Scoped offline snapshot | Complete: see `docs/plans/02-iphone-offline-pwa/task-03-result.md`. |
+| UI/UX refresh | Modern visual system and daily-task selector | Complete: shared typography, gradient actions, glass surfaces, consistent app menu, dashboard/statistics/auth/offline styling, and a one-click add/remove daily list. |
 
 ## Verified state
 
@@ -34,6 +35,9 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Tasks have a validated, child-friendly Lucide icon. Parents can create a task directly from Set Daily tasks; Today shows only each task’s icon and point value, with the name available on hover/focus.
 - Parents can confirm a current-week reset with manual remaining, received, and redeemed totals. The reset hides prior activity for that week in the app and later events accumulate from the entered values.
 - Tailwind v4 and shared WayWeGo-style UI primitives provide the default application interface.
+- The interface uses a consistent system type scale, emerald/teal brand gradients, warm reward accents, glass-like surfaces, and consistent menu typography across iPhone and desktop layouts.
+- Set daily tasks presents unselected tasks as icon buttons, moves each selected task into a duplicate-safe list, and provides a quick remove control before saving.
+- Tasks and rewards share a curated 32-icon Lucide catalog; the linked Supabase constraints were expanded through migration `202608090007` and verified as up to date on a repeat migration run.
 - A linked hosted Supabase development project has all tracked migrations applied; no secrets are stored in the repository.
 
 ## Required before the next task can be fully verified

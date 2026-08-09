@@ -26,6 +26,11 @@ function done(childId: string): never {
   redirect(`/?child=${encodeURIComponent(childId)}`);
 }
 
+function doneWithMessage(childId: string, message: string): never {
+  revalidatePath("/");
+  redirect(`/?child=${encodeURIComponent(childId)}&message=${encodeURIComponent(message)}`);
+}
+
 export async function createTask(formData: FormData) {
   const childId = value(formData, "childId");
   await parentId();
@@ -110,7 +115,7 @@ export async function setWeeklyTasks(formData: FormData) {
   }
   const taskIds = formData.getAll("taskId").filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
   const supabase = await createClient();
-  const { error } = await supabase.rpc("replace_weekly_task_plan", { p_child_id: childId, p_week_start: weekStart, p_task_ids: taskIds });
+  const { error } = await supabase.rpc("replace_daily_task_selection", { p_child_id: childId, p_task_ids: taskIds });
   if (error) fail(childId, error.code === "22023" ? error.message : "Unable to save daily tasks.");
   done(childId);
 }
@@ -136,7 +141,7 @@ export async function resetWeeklyPoints(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("reset_weekly_points", { p_child_id: childId, p_remaining_points: remainingPoints, p_received_points: receivedPoints, p_redeemed_points: redeemedPoints });
   if (error) fail(childId, error.code === "22023" ? error.message : "Unable to reset this week.");
-  done(childId);
+  doneWithMessage(childId, "Week points reset.");
 }
 
 export async function completeTask(formData: FormData) {

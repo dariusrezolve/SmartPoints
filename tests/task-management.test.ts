@@ -13,5 +13,6 @@ describe("task management", () => {
     expect(menu).toContain("selectedEditTaskIcon");
     expect(actions).toContain("export async function updateTask");
     expect(actions).toContain("export async function archiveTask");
+    expect(actions).toContain("Week points reset.");
   });
 });

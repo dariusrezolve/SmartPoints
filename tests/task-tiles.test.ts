@@ -10,5 +10,6 @@ describe("daily task tiles", () => {
     expect(component).toContain("lastTappedTaskId");
     expect(component).toContain("task-tile-pulse");
     expect(component).toContain("Points added: +");
+    expect(component).toContain("Current week");
   });
 });

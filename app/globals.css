@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
-@theme { --font-sans: Arial, Helvetica, sans-serif; }
+@theme { --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: #f8fafc; color: #0f172a; }
-body:has(.workspace-page) { background: radial-gradient(circle at 8% 8%, rgb(224 242 254 / .8), transparent 29rem), radial-gradient(circle at 92% 18%, rgb(237 233 254 / .7), transparent 32rem), linear-gradient(145deg, #f8fafc 0%, #f5f8ff 52%, #faf8ff 100%); }
+html { background: #f5faf7; }
+body { min-height: 100vh; margin: 0; background: radial-gradient(circle at 12% 4%, rgb(209 250 229 / .7), transparent 26rem), radial-gradient(circle at 92% 16%, rgb(204 251 241 / .55), transparent 30rem), linear-gradient(150deg, #f8fbf9 0%, #f3f9f6 55%, #fffaf2 100%); color: #0f172a; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+body:has(.workspace-page) { background: radial-gradient(circle at 8% 8%, rgb(167 243 208 / .58), transparent 29rem), radial-gradient(circle at 92% 18%, rgb(153 246 228 / .42), transparent 32rem), radial-gradient(circle at 55% 100%, rgb(254 243 199 / .45), transparent 32rem), linear-gradient(145deg, #f7fdf9 0%, #f1faf5 52%, #fffdf8 100%); }
 a { color: inherit; text-decoration: none; }
 label { display: grid; gap: .4rem; color: #334155; font-size: .875rem; font-weight: 600; }
+::selection { background: rgb(167 243 208); color: #064e3b; }
 
 button, input, select, textarea { touch-action: manipulation; }
+button, a, summary, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+dialog::backdrop { backdrop-filter: blur(5px); }
 
 @keyframes task-tile-pulse { 0% { transform: scale(1); } 35% { transform: scale(.92); } 70% { transform: scale(1.06); } 100% { transform: scale(1); } }
 .task-tile-pulse { animation: task-tile-pulse .55s ease-out; }
