@@ -4,11 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enqueueOfflineAction, listOfflineActions, removeOfflineAction, type OfflineAction } from "@/lib/offline/storage";
 
-export type ActionSyncResult = { status: "synced" | "offline" | "failed" | "queued"; reason?: string };
+export type ActionSyncResult = { status: "synced" | "offline" | "queued"; reason?: string };
 
 export function useOfflineActionSync(parentId: string) {
   const [queued, setQueued] = useState(0);
-  const [needsAttention, setNeedsAttention] = useState<OfflineAction[]>([]);
   const [pendingActions, setPendingActions] = useState<OfflineAction[]>([]);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -16,27 +15,28 @@ export function useOfflineActionSync(parentId: string) {
 
   const refresh = useCallback(async () => {
     const actions = (await listOfflineActions()).filter((action) => action.parentId === parentId);
-    setQueued(actions.filter((action) => action.status === "queued").length);
-    setNeedsAttention(actions.filter((action) => action.status === "needs_attention"));
-    setPendingActions(actions);
+    const pending = actions.map((action) => action.status === "needs_attention" ? { ...action, status: "queued" as const } : action);
+    await Promise.all(pending.filter((action, index) => action !== actions[index]).map(enqueueOfflineAction));
+    setQueued(pending.length);
+    setPendingActions(pending);
   }, [parentId]);
 
   const performSync = useCallback(async (requestedActionId?: string): Promise<ActionSyncResult> => {
       let requestedResult: ActionSyncResult | undefined;
       const supabase = createClient();
       for (const action of await listOfflineActions()) {
-        if (action.parentId !== parentId || action.status !== "queued") continue;
+        if (action.parentId !== parentId || (action.status !== "queued" && action.status !== "needs_attention")) continue;
         let error: { message: string } | null = null;
         try {
-          if (action.kind === "complete") ({ error } = await supabase.rpc("queue_task_completion", { p_child_id: action.childId, p_task_id: action.taskId!, p_effective_date: action.effectiveDate!, p_request_id: action.id }));
+          if (action.kind === "complete") ({ error } = await supabase.rpc("queue_task_completion", { p_child_id: action.childId, p_task_id: action.taskId!, p_effective_date: action.effectiveDate!, p_points: action.pointDelta, p_request_id: action.id }));
           else if (action.kind === "undo") ({ error } = await supabase.rpc("queue_task_undo", { p_event_id: action.eventId!, p_request_id: action.id }));
-          else ({ error } = await supabase.rpc("queue_reward_redemption", { p_child_id: action.childId, p_reward_id: action.rewardId!, p_request_id: action.id }));
+          else ({ error } = await supabase.rpc("queue_reward_redemption", { p_child_id: action.childId, p_reward_id: action.rewardId!, p_cost: Math.abs(action.pointDelta!), p_request_id: action.id }));
         } catch (caught) {
           error = { message: caught instanceof Error ? caught.message : "Unable to reach SmartPoints." };
         }
         if (error) {
-          await enqueueOfflineAction({ ...action, status: "needs_attention", reason: error.message });
-          if (action.id === requestedActionId) requestedResult = { status: "failed", reason: error.message };
+          await enqueueOfflineAction({ ...action, status: "queued", reason: error.message });
+          if (action.id === requestedActionId) requestedResult = { status: "queued", reason: error.message };
         } else {
           await removeOfflineAction(action.id);
           if (action.id === requestedActionId) requestedResult = { status: "synced" };
@@ -53,7 +53,6 @@ export function useOfflineActionSync(parentId: string) {
       if (!requestedActionId) return { status: "synced" };
       const action = (await listOfflineActions()).find((item) => item.id === requestedActionId);
       if (!action) return { status: "synced" };
-      if (action.status === "needs_attention") return { status: "failed", reason: action.reason };
       return performSync(requestedActionId);
     }
 
@@ -67,9 +66,12 @@ export function useOfflineActionSync(parentId: string) {
     const timer = window.setTimeout(() => { setIsOnline(navigator.onLine); void refresh(); void sync(); }, 0);
     const onOnline = () => { setIsOnline(true); void sync(); };
     const onOffline = () => setIsOnline(false);
+    const onVisibilityChange = () => { if (document.visibilityState === "visible" && navigator.onLine) void sync(); };
+    const retryTimer = window.setInterval(() => { if (navigator.onLine) void sync(); }, 15_000);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
-    return () => { window.clearTimeout(timer); window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => { window.clearTimeout(timer); window.clearInterval(retryTimer); window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); document.removeEventListener("visibilitychange", onVisibilityChange); };
   }, [refresh, sync]);
 
   const queue = useCallback(async (action: Omit<OfflineAction, "id" | "parentId" | "createdAt" | "status">) => {
@@ -79,6 +81,5 @@ export function useOfflineActionSync(parentId: string) {
     return queuedAction;
   }, [parentId, refresh]);
 
-  const discard = useCallback(async (id: string) => { await removeOfflineAction(id); await refresh(); }, [refresh]);
-  return { queue, queued, syncing, sync, needsAttention, pendingActions, isOnline, discard };
+  return { queue, queued, syncing, sync, pendingActions, isOnline };
 }

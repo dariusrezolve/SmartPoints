@@ -10,6 +10,7 @@ describe("family menu", () => {
     expect(component).toContain('role="menu"');
     expect(component).toContain('action="/auth/sign-out"');
     expect(component).toContain("Reset this week");
+    expect(component).toContain("h-10");
     expect(component).toContain('name="confirmReset"');
     expect(component.indexOf('action="/auth/sign-out"')).toBeLessThan(component.indexOf("</details>"));
     expect(component.indexOf("<WorkspaceModal")).toBeGreaterThan(component.indexOf("</details>"));

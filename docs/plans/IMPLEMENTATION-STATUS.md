@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-09 — SmartPoints received a modern iPhone-first visual refresh and a one-click, duplicate-safe daily-task list editor; the release passed lint, typecheck, 33 tests, and a production build before Vercel deployment.
+2026-08-09 — SmartPoints gained week-over-week statistics trends, task sparklines, reward-spend shares, persistent management workflows, modal-safe action toasts, and automatic additive offline reconciliation.
 
 ## Current position
 
@@ -21,6 +21,8 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 02-iphone-offline-pwa | F2 — iPhone-first workspace | Complete: see `docs/plans/02-iphone-offline-pwa/task-02-result.md`. |
 | 02-iphone-offline-pwa | F3 — Scoped offline snapshot | Complete: see `docs/plans/02-iphone-offline-pwa/task-03-result.md`. |
 | UI/UX refresh | Modern visual system and daily-task selector | Complete: shared typography, gradient actions, glass surfaces, consistent app menu, dashboard/statistics/auth/offline styling, and a one-click add/remove daily list. |
+| 03-statistics-trends | Weekly comparison dashboard | Complete: deterministic two-week ledger aggregation, overall trend cards, daily and task SVG sparklines, and reward spending shares/percentages. |
+| 02-iphone-offline-pwa | F4–F5 — Additive offline reconciliation | Complete: captured-value idempotent RPCs, automatic retries/recovery, duplicate-undo convergence, and no manual discard queue. |
 
 ## Verified state
 
@@ -39,6 +41,9 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Set daily tasks presents unselected tasks as icon buttons, moves each selected task into a duplicate-safe list, and provides a quick remove control before saving.
 - Tasks and rewards share a curated 32-icon Lucide catalog; the linked Supabase constraints were expanded through migration `202608090007` and verified as up to date on a repeat migration run.
 - A linked hosted Supabase development project has all tracked migrations applied; no secrets are stored in the repository.
+- Statistics compare the selected Monday–Sunday week with the prior week, net task undo events, identify improving tasks, and show each reward's share of spending without a third-party chart dependency.
+- Action toasts use the browser top layer so success and failure feedback stays visible above native modal dialogs.
+- Offline daily actions use captured values and idempotency keys. Distinct actions from different devices are additive; duplicate requests are not, and legacy terminal queue items are retried automatically.
 
 ## Required before the next task can be fully verified
 
@@ -47,7 +52,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Next task
 
-1. F4 — Add idempotent queued daily actions and ordered reconciliation under `docs/plans/02-iphone-offline-pwa/plan.md`.
+1. Run a browser/iPhone manual matrix for automatic offline reconciliation after the next production deployment.
 2. Resolve and verify the browser-authenticated child-profile query error in production.
 3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
 

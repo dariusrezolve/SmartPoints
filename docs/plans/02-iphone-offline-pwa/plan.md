@@ -2,11 +2,11 @@
 
 ## Status
 
-Implementing — F1 complete
+Implemented — F1–F5 complete
 
 ## Outcome
 
-A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-like layout, and record daily point actions without connectivity. The app persists those actions locally, automatically synchronizes them in order when connectivity returns, and clearly exposes any action that the server rejects.
+A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-like layout, and record daily point actions without connectivity. The app persists those actions locally and automatically synchronizes them as additive, idempotent ledger operations when connectivity returns.
 
 ## Facts, assumptions, and open questions
 
@@ -35,8 +35,8 @@ A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-l
 - Cache only the authenticated parent’s selected-child, current-week snapshot and the minimal task/reward data needed to show daily actions.
 - Offline queueing for task completion, completion undo, and reward redemption only.
 - Optimistic local updates with an ordered, persistent action queue and client-generated idempotency keys.
-- Automatic ordered sync on connectivity/app-resume, plus compact `Offline — n queued`, `Syncing`, `Synced`, and `Needs attention` status.
-- A persistent Needs attention list for server-rejected actions, with a reason and explicit discard action.
+- Automatic ordered sync on startup, connectivity, app-resume, and a short retry interval, plus compact `Offline — n queued`, `Syncing`, and `Synced` status.
+- Automatic recovery of legacy rejected actions without a manual discard workflow.
 - Clear local-data deletion on explicit sign-out.
 
 ### Excluded / post-MVP
@@ -44,7 +44,7 @@ A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-l
 - Offline creation, editing, archival, or selection of child profiles, tasks, rewards, daily tasks, or weekly resets.
 - Offline navigation to older weeks, full activity history, or child-profile switching.
 - Guaranteed background synchronization while Safari is closed, push notifications, native wrappers, or App Store distribution.
-- Automated conflict merging, silent retries of rejected actions, and cross-device real-time state synchronization.
+- Cross-device real-time subscriptions while both devices remain open.
 - Caching authenticated HTML responses or retaining any offline data after explicit sign-out.
 
 ## Acceptance criteria
@@ -55,7 +55,8 @@ A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-l
 - [ ] Offline completion, undo, and redemption update the local display immediately and enter exactly one ordered queue record each.
 - [ ] A queued action is not sent while offline and is sent once when the app regains connectivity or resumes online.
 - [ ] Retrying/reloading/reconnecting cannot duplicate a completed, undone, or redeemed point event.
-- [ ] A rejected queued action appears in Needs attention with its safe reason and remains there until explicitly discarded.
+- [ ] A transiently rejected queued action remains optimistic and retries automatically without parent intervention.
+- [ ] Independent actions from multiple devices are additive; replaying the same request ID never duplicates an event.
 - [ ] Offline management actions are unavailable with clear online-only wording; no management mutation is queued.
 - [ ] Explicit sign-out clears the cached snapshot and pending queue for that parent/device.
 - [ ] Service-worker caching never stores authenticated HTML/API responses or Supabase credentials.
@@ -67,8 +68,8 @@ A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-l
 | F1 | iPhone parents can install and launch SmartPoints as a focused PWA. | Manifest, icons, standalone display, Safari install guidance work. | Web, service worker, deployment assets. |
 | F2 | The daily workspace remains readable and touch-friendly on iPhone. | Primary dashboard, dialogs, menu, and status fit iPhone screens. | Web/UI. |
 | F3 | A parent can reopen an authenticated current-week snapshot offline. | Correct selected-child snapshot is local and sign-out clears it. | Web, browser storage, auth boundary. |
-| F4 | Daily point actions work offline and sync once in order. | Completion, undo, redemption queue and reconcile idempotently. | Web, API/RPC, data contract, authorization. |
-| F5 | A parent can understand sync health and resolve rejections. | Status and Needs attention remain accurate across reloads. | Web, browser storage, API errors. |
+| F4 | Daily point actions work offline and sync once in order. | Complete: completion, undo, redemption queue and reconcile idempotently with captured values. | Web, API/RPC, data contract, authorization. |
+| F5 | A parent can trust automatic reconciliation without managing errors. | Complete: status remains accurate and legacy rejected actions recover automatically. | Web, browser storage, API errors. |
 
 ## Dependency matrix
 
@@ -78,7 +79,7 @@ A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-l
 | F2 | — | F3–F5 | A with F1 | UI ownership is independent of service-worker build configuration. | Core flows fit supported iPhone sizes. |
 | F3 | F1, F2 | F4–F5 | — | Queue UX needs a defined, safe cached snapshot. | Offline reload renders only the scoped snapshot. |
 | F4 | F3 | F5 | — | Queue schema, idempotency contract, and reconciliation are shared. | Reconnect sends each daily action once. |
-| F5 | F4 | Release gate | — | Status and rejection handling consume finalized reconciliation states. | Queue status and discard flow survive reload. |
+| F5 | F4 | Release gate | — | Status and retry handling consume finalized reconciliation states. | Automatic retry survives reload and needs no discard flow. |
 
 ## Grill-me record
 
@@ -89,16 +90,17 @@ A parent can add SmartPoints to an iPhone Home Screen, use it in a focused app-l
 | Device target | Which mobile device is primary? | Focus iPhone for the strongest daily-use experience; iPad is responsive only. | iPhone. | iPhone install/offline acceptance criteria. | Resolved |
 | Synchronization | How should reconnection behave? | Automatic sync with explicit status reduces parent effort; rejections need visible handling. | Automatic sync and status. | Ordered reconcile lifecycle. | Resolved |
 | Install guidance | Include iPhone install help? | A Safari-specific tip compensates for lack of a reliable native install prompt; adds onboarding UI. | Yes. | Add dismissible post-use tip. | Resolved |
-| Rejections | What happens to actions the server rejects? | Keep them visible until discarded; avoids silent loss but requires a manual action. | Retain until discarded. | Needs attention queue state. | Resolved |
+| Rejections | What happens to actions the server rejects? | Retry additive, captured-value operations automatically; avoids parent cleanup but preserves an unresolved operation until authorization returns. | Automatically retry; no manual discard. | Replace Needs attention with additive reconciliation. | Superseded 2026-08-09 |
+| Cross-device merge | How should concurrent device actions combine? | Immutable idempotent operations converge without last-write-wins loss; captured values may differ from later edits. | Add/subtract every unique captured-value action exactly once. | Extend queued RPC contract with captured points/cost and duplicate-undo convergence. | Resolved 2026-08-09 |
 | PWA implementation | Which offline foundation? | Serwist plus IndexedDB is maintained and suited to Next.js offline support; adds dependencies/Webpack setup. | Serwist plus IndexedDB. | Add PWA build and storage boundary. | Resolved |
 
 ## Contracts and boundaries
 
 - **Browser storage:** IndexedDB records are versioned and scoped by authenticated parent ID; they contain the selected child current-week snapshot and queue only. Sign-out deletes that scope.
-- **Queue contract:** each record has a generated idempotency key, action kind (`complete`, `undo`, `redeem`), child/task/reward references, effective date where applicable, and non-sensitive display metadata.
-- **Server/API:** add idempotency-key handling to every queued mutation. The server remains the only ledger writer and validates current authorization, task/reward availability, undo eligibility, and date constraints at sync time.
+- **Queue contract:** each record has a generated idempotency key, action kind (`complete`, `undo`, `redeem`), child/task/reward references, effective date where applicable, and the point value captured when tapped.
+- **Server/API:** idempotency-key handling applies each unique captured-value mutation once. The server remains the only ledger writer, validates current child access and source ownership, and accepts archived-but-retained tasks/rewards.
 - **Service worker:** precache versioned static assets and the offline shell; never cache authenticated route HTML, Supabase REST/Auth responses, cookies, or credentials.
-- **Conflict policy:** FIFO replay. Server rejection is terminal for this release and becomes a parent-visible Needs attention item; no automatic merge/retry.
+- **Conflict policy:** FIFO replay with automatic retry. Unique operations are additive, duplicate request IDs are no-ops, and duplicate undo requests converge to the existing reversal.
 - **Auth:** no cached data is served before a browser session exists; sign-out clears offline records before redirecting.
 
 ## Implementation order

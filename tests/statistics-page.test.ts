@@ -11,6 +11,13 @@ describe("weekly statistics", () => {
     expect(page).toContain("Previous week");
     expect(page).toContain("Points received");
     expect(page).toContain("Points redeemed");
+    expect(page).toContain("Compared with last week");
+    expect(page).toContain("Task trends");
+    expect(page).toContain("Where points were spent");
+    expect(page).toContain("Current week");
+    expect(page).toContain("Last week");
+    expect(page).toContain('strokeWidth="2"');
+    expect(page).toContain('strokeWidth="1.5"');
     expect(menu).toContain("Statistics");
   });
 
@@ -19,5 +26,12 @@ describe("weekly statistics", () => {
 
     expect(home).toContain('gte("effective_date", viewedWeekStart)');
     expect(home).toContain('lt("effective_date", shiftWeek(viewedWeekStart, 1))');
+  });
+
+  it("hides archived tasks from the task trend breakdown", async () => {
+    const page = await readFile(new URL("../app/statistics/page.tsx", import.meta.url), "utf8");
+
+    expect(page).toContain("taskNames.has(task.id)");
+    expect(page).not.toContain("Archived task");
   });
 });

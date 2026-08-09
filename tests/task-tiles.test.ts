@@ -11,5 +11,6 @@ describe("daily task tiles", () => {
     expect(component).toContain("task-tile-pulse");
     expect(component).toContain("Points added: +");
     expect(component).toContain("Current week");
+    expect(component).toContain('className="line-clamp-2 text-center text-xs font-semibold leading-snug"');
   });
 });

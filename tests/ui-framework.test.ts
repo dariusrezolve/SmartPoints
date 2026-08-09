@@ -41,4 +41,18 @@ describe("WayWeGo UI framework", () => {
     expect(workspace).toContain("text-sm font-bold uppercase");
     expect(workspace).toContain("sm:text-base");
   });
+
+  it("promotes action toasts above native modal dialogs", async () => {
+    const workspace = await readFile(new URL("../app/components/points-workspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain('popover="manual"');
+    expect(workspace).toContain("showPopover()");
+  });
+
+  it("aligns week navigation and menu controls to the same height", async () => {
+    const workspace = await readFile(new URL("../app/components/points-workspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain('aria-label="Previous week" className="inline-flex h-10');
+    expect(workspace).toContain('aria-label="Next week" className="inline-flex h-10');
+  });
 });

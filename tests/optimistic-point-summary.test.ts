@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyPendingPointActions } from "../lib/offline/optimistic-summary";
 
 describe("pending point actions", () => {
-  it("immediately includes queued completions, redemptions, and undos in the dashboard totals", () => {
+  it("keeps legacy needs-attention actions additive while automatic retry recovers them", () => {
     const summary = applyPendingPointActions(
       { balance: 10, receivedThisWeek: 6, redeemedThisWeek: 2 },
       [
@@ -13,6 +13,6 @@ describe("pending point actions", () => {
       ],
     );
 
-    expect(summary).toEqual({ balance: 7, receivedThisWeek: 7, redeemedThisWeek: 6 });
+    expect(summary).toEqual({ balance: 106, receivedThisWeek: 106, redeemedThisWeek: 6 });
   });
 });
