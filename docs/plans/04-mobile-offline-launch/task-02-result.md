@@ -27,5 +27,6 @@ The installed PWA’s cached launch route now offers the selected child’s comp
 
 ## Remaining release validation
 
-- No deployment was requested or performed.
+- Production deployment completed on 2026-08-11 from revision `c6ad382`.
+- Vercel reports the deployment Ready at `https://smartpoints-navy.vercel.app`; its `/api/health` endpoint returned `{"status":"ok","supabaseConfigured":true}`.
 - An installed-iPhone matrix still needs to confirm first online save, offline relaunch, all three queue actions, reconnect reconciliation, sign-out clearing, and delayed-online refresh.

@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. Automated checks pass; installed-iPhone validation remains.
+2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. Revision `c6ad382` is deployed to Vercel production and its health endpoint is healthy; installed-iPhone validation remains.
 
 ## Current position
 
