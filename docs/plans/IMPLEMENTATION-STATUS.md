@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. Revision `c6ad382` is deployed to Vercel production and its health endpoint is healthy; installed-iPhone validation remains.
+2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. A local regression fix now routes an online first launch with no saved snapshot to the authoritative workspace; it is not yet pushed or deployed. Revision `c6ad382` remains deployed to Vercel production and its health endpoint is healthy.
 
 ## Current position
 
@@ -28,6 +28,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | PWA discoverability | Menu install action | Complete: the workspace menu offers native installation when a browser exposes it and clear Safari Home Screen instructions on iPhone. |
 | 04-mobile-offline-launch | F1 — Cached launch contract | Complete: see `docs/plans/04-mobile-offline-launch/task-01-result.md`. |
 | 04-mobile-offline-launch | F2–F4 — Cached daily workspace, refresh, and cache boundary | Complete: see `docs/plans/04-mobile-offline-launch/task-02-result.md`. |
+| 04-mobile-offline-launch | Online first-launch regression | Complete locally: see `docs/plans/04-mobile-offline-launch/task-03-result.md`; pending push/deployment. |
 
 ## Verified state
 
@@ -62,7 +63,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Next task
 
-1. Run an installed-iPhone manual matrix for cached launch: first online save, offline relaunch, completion/redemption/Undo, reconnect reconciliation, sign-out clearing, and delayed-online refresh.
+1. Push and deploy the verified online first-launch regression fix when authorized, then run an installed-iPhone manual matrix: first online save, offline relaunch, completion/redemption/Undo, reconnect reconciliation, sign-out clearing, and delayed-online refresh.
 2. Resolve and verify the browser-authenticated child-profile query error in production.
 3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
 

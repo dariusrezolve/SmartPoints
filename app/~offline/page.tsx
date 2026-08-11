@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { CheckCircle2, Gift, RotateCcw, WifiOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
@@ -12,11 +12,21 @@ import { loadLatestOfflineSnapshot, type OfflineSnapshot } from "@/lib/offline/s
 import type { TaskIconName } from "@/lib/points/validation";
 
 export default function OfflinePage() {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<OfflineSnapshot | null | undefined>(undefined);
+  const isOnline = useSyncExternalStore(
+    (callback) => { window.addEventListener("online", callback); window.addEventListener("offline", callback); return () => { window.removeEventListener("online", callback); window.removeEventListener("offline", callback); }; },
+    () => navigator.onLine,
+    () => false,
+  );
   useEffect(() => { void loadLatestOfflineSnapshot().then(setSnapshot).catch(() => setSnapshot(null)); }, []);
+  useEffect(() => {
+    if (snapshot !== null || isOnline !== true) return;
+    router.replace("/");
+  }, [isOnline, router, snapshot]);
 
   if (snapshot === undefined) return <main className="workspace-page mx-auto w-full max-w-xl px-5 pb-10 pt-6"><Card className="p-5 sm:p-6"><p className="text-sm text-slate-600">Loading your saved workspace…</p></Card></main>;
-  if (!snapshot) return <main className="workspace-page mx-auto w-full max-w-xl px-5 pb-10 pt-6"><Card className="p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">Offline mode</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">You&apos;re offline</h1><p className="mt-3 text-sm text-slate-600">Open SmartPoints online once to save the daily workspace on this iPhone.</p></Card></main>;
+  if (!snapshot) return <main className="workspace-page mx-auto w-full max-w-xl px-5 pb-10 pt-6"><Card className="p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">{isOnline === false ? "Offline mode" : "Opening SmartPoints"}</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{isOnline === false ? "You’re offline" : "Opening SmartPoints…"}</h1><p className="mt-3 text-sm text-slate-600">{isOnline === false ? "Open SmartPoints online once to save the daily workspace on this iPhone." : "Loading your current workspace."}</p></Card></main>;
 
   return <CachedWorkspace snapshot={snapshot}/>;
 }

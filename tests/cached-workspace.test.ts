@@ -19,4 +19,11 @@ describe("cached daily workspace", () => {
     expect(page).toContain('router.replace("/")');
     expect(page).toContain("navigator.onLine");
   });
+
+  it("opens the authoritative workspace instead of claiming offline when no saved snapshot exists online", async () => {
+    const page = await readFile(new URL("../app/~offline/page.tsx", import.meta.url), "utf8");
+
+    expect(page).toContain("Opening SmartPoints");
+    expect(page).toContain("snapshot !== null || isOnline !== true");
+  });
 });
