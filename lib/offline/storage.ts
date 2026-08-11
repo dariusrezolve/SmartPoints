@@ -1,6 +1,7 @@
 export type OfflineTask = { id: string; name: string; points: number; icon: string };
 export type OfflineReward = { id: string; name: string; cost: number };
-export type OfflineSnapshot = { key: string; parentId: string; childId: string; childName: string; currentDate: string; balance: number; receivedThisWeek: number; redeemedThisWeek: number; tasks: OfflineTask[]; rewards: OfflineReward[]; savedAt: string };
+export type OfflineEvent = { id: string; eventType: string; pointDelta: number; effectiveDate: string; taskId: string | null; rewardId: string | null; taskName?: string; rewardName?: string; icon?: string };
+export type OfflineSnapshot = { key: string; parentId: string; childId: string; childName: string; currentDate: string; balance: number; receivedThisWeek: number; redeemedThisWeek: number; tasks: OfflineTask[]; rewards: OfflineReward[]; events: OfflineEvent[]; savedAt: string };
 
 const databaseName = "smartpoints-offline";
 const databaseVersion = 3;

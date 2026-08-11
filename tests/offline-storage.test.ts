@@ -15,4 +15,16 @@ describe("offline snapshot storage", () => {
     expect(storage).toContain("transaction.objectStore(storeName).clear()");
     expect(storage).toContain("transaction.objectStore(actionStoreName).clear()");
   });
+
+  it("persists bounded recent activity for the cached daily workspace", async () => {
+    const storage = await readFile(new URL("../lib/offline/storage.ts", import.meta.url), "utf8");
+
+    expect(storage).toContain("events: OfflineEvent[]");
+  });
+
+  it("uses the cached workspace as the installed app launch route", async () => {
+    const manifest = await readFile(new URL("../app/manifest.ts", import.meta.url), "utf8");
+
+    expect(manifest).toContain('start_url: "/~offline"');
+  });
 });

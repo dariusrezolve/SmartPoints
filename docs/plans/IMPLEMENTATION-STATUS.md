@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-09 — SmartPoints gained week-over-week statistics trends, task sparklines, reward-spend shares, persistent management workflows, modal-safe action toasts, automatic additive offline reconciliation, an emerald task-card app icon, a one-time clean-start reset for pre-MVP offline data, and an in-menu app installer.
+2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. Automated checks pass; installed-iPhone validation remains.
 
 ## Current position
 
@@ -26,6 +26,8 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | PWA visual identity | Emerald task-card app icon | Complete: browser and Apple Home Screen icons share a high-contrast emerald/teal task-completion mark with a warm point accent. TDD was skipped only for the release-policy documentation because it is governance-only; the icon behavior has a focused regression test. |
 | PWA clean start | Clear pre-MVP offline point state | Complete: IndexedDB schema upgrade removes the old dashboard snapshot and queued actions once, so the requested ledger reset cannot be visually stale or replayed from an installed iPhone. |
 | PWA discoverability | Menu install action | Complete: the workspace menu offers native installation when a browser exposes it and clear Safari Home Screen instructions on iPhone. |
+| 04-mobile-offline-launch | F1 — Cached launch contract | Complete: see `docs/plans/04-mobile-offline-launch/task-01-result.md`. |
+| 04-mobile-offline-launch | F2–F4 — Cached daily workspace, refresh, and cache boundary | Complete: see `docs/plans/04-mobile-offline-launch/task-02-result.md`. |
 
 ## Verified state
 
@@ -50,6 +52,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Updating from the pre-MVP PWA upgrades the local offline database once, deleting its old snapshots and queued actions; new MVP offline actions persist normally afterward.
 - The workspace menu includes Install app, opening a native browser prompt where supported or the Safari Add to Home Screen flow for iPhone.
 - The browser favicon, manifest icon, and iPhone Apple touch icon use the emerald/teal task-completion mark; browser rendering does not depend on an external icon font.
+- Installed PWAs start at the static cached-workspace route, so a saved daily workspace is visible before a network navigation. The route uses the established idempotent queue for offline daily actions and transitions to the authoritative route only after online queued work clears.
 - Release policy requires staging/preview validation before production and an explicit current-conversation production request.
 
 ## Required before the next task can be fully verified
@@ -59,7 +62,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Next task
 
-1. Run a browser/iPhone manual matrix for automatic offline reconciliation after the next production deployment.
+1. Run an installed-iPhone manual matrix for cached launch: first online save, offline relaunch, completion/redemption/Undo, reconnect reconciliation, sign-out clearing, and delayed-online refresh.
 2. Resolve and verify the browser-authenticated child-profile query error in production.
 3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
 

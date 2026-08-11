@@ -6,7 +6,7 @@ describe("iPhone PWA foundation", () => {
     const manifest = await readFile(new URL("../app/manifest.ts", import.meta.url), "utf8");
 
     expect(manifest).toContain('display: "standalone"');
-    expect(manifest).toContain('start_url: "/"');
+    expect(manifest).toContain('start_url: "/~offline"');
     expect(manifest).toContain('theme_color: "#059669"');
     await access(new URL("../app/sw.ts", import.meta.url));
   });
@@ -25,10 +25,14 @@ describe("iPhone PWA foundation", () => {
   });
 
   it("configures the Next build to generate the service worker", async () => {
-    const nextConfig = await readFile(new URL("../next.config.ts", import.meta.url), "utf8");
+    const [nextConfig, serviceWorker] = await Promise.all([
+      readFile(new URL("../next.config.ts", import.meta.url), "utf8"),
+      readFile(new URL("../app/sw.ts", import.meta.url), "utf8"),
+    ]);
 
     expect(nextConfig).toContain("withSerwist");
     expect(nextConfig).toContain('swSrc: "app/sw.ts"');
+    expect(serviceWorker).toContain("runtimeCaching: []");
   });
 
   it("includes iPhone safe-area and touch-target rules", async () => {

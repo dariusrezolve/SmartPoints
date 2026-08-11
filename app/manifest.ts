@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "SmartPoints",
     short_name: "SmartPoints",
     description: "A simple family points tracker.",
-    start_url: "/",
+    start_url: "/~offline",
     display: "standalone",
     background_color: "#f7fdf9",
     theme_color: "#059669",
