@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. A local regression fix now routes an online first launch with no saved snapshot to the authoritative workspace; it is not yet pushed or deployed. Revision `c6ad382` remains deployed to Vercel production and its health endpoint is healthy.
+2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. Revision `64f0dff` fixes online first launches with no saved snapshot and is deployed to Vercel production; its health endpoint is healthy.
 
 ## Current position
 

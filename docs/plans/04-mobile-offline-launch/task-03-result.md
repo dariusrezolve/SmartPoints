@@ -23,4 +23,5 @@ The PWA start URL is `/~offline`. Its cached-workspace refresh existed only afte
 
 ## Release status
 
-- This corrective change is local only. No push or deployment was requested in this conversation turn.
+- Revision `64f0dff` was deployed to Vercel production on 2026-08-11.
+- Vercel reports Ready at `https://smartpoints-navy.vercel.app`; its `/api/health` endpoint returned `{"status":"ok","supabaseConfigured":true}`.
