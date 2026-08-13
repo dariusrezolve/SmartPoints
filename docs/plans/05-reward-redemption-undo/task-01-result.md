@@ -33,4 +33,5 @@ Parents can undo any current-week reward redemption shown in Recent activity, in
 
 ## Release status
 
-- No push or deployment was requested or performed.
+- Revision `33698f4` was deployed to Vercel production on 2026-08-13.
+- Vercel reports Ready at `https://smartpoints-navy.vercel.app`; its `/api/health` endpoint returned `{"status":"ok","supabaseConfigured":true}`.

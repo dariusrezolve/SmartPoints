@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-13 — SmartPoints now supports a one-time, immutable Undo for current-week reward redemptions in both online and cached mobile activity views. It syncs idempotently offline, nets redeemed totals/statistics correctly, and migration `202608130001` is applied to linked development; the verified change is not yet pushed or deployed.
+2026-08-13 — SmartPoints now supports a one-time, immutable Undo for current-week reward redemptions in both online and cached mobile activity views. It syncs idempotently offline, nets redeemed totals/statistics correctly, and revision `33698f4` plus migration `202608130001` are deployed to production; the health endpoint is healthy.
 
 ## Current position
 
