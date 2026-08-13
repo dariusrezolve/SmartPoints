@@ -7,7 +7,7 @@ const databaseName = "smartpoints-offline";
 const databaseVersion = 3;
 const storeName = "snapshots";
 const actionStoreName = "actions";
-export type OfflineAction = { id: string; parentId: string; childId: string; kind: "complete" | "undo" | "redeem"; taskId?: string; rewardId?: string; eventId?: string; effectiveDate?: string; pointDelta?: number; createdAt: string; status: "queued" | "needs_attention"; reason?: string };
+export type OfflineAction = { id: string; parentId: string; childId: string; kind: "complete" | "undo" | "undo_reward" | "redeem"; taskId?: string; rewardId?: string; eventId?: string; effectiveDate?: string; pointDelta?: number; createdAt: string; status: "queued" | "needs_attention"; reason?: string };
 
 export function offlineSnapshotKey(parentId: string, childId: string) { return `${parentId}:${childId}`; }
 

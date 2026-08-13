@@ -109,8 +109,8 @@ export function buildWeeklyStatistics(events: StatisticsEvent[], currentWeekStar
       overallDaily[index] += event.point_delta;
     }
 
-    if (event.event_type === "reward_redemption" && event.reward_id) {
-      const spent = Math.abs(event.point_delta);
+    if ((event.event_type === "reward_redemption" || event.event_type === "reward_redemption_undo") && event.reward_id) {
+      const spent = -event.point_delta;
       add(isCurrent ? currentRewards : previousRewards, event.reward_id, spent);
       addDaily(isCurrent ? currentRewardDaily : previousRewardDaily, event.reward_id, index, spent);
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCurrentLocalDate, isTaskIcon, normalizePointValue, normalizeTitle } from "../lib/points/validation";
+import { getCurrentLocalDate, getWeeklyPointSummary, isTaskIcon, normalizePointValue, normalizeTitle } from "../lib/points/validation";
 
 describe("points workspace validation", () => {
   it("trims task and reward titles", () => {
@@ -24,5 +24,12 @@ describe("points workspace validation", () => {
     expect(isTaskIcon("Trophy")).toBe(true);
     expect(isTaskIcon("WashingMachine")).toBe(true);
     expect(isTaskIcon("arbitrary-icon")).toBe(false);
+  });
+
+  it("nets reward-redemption reversals from the weekly redeemed total", () => {
+    expect(getWeeklyPointSummary([
+      { effective_date: "2026-08-10", event_type: "reward_redemption", point_delta: -6 },
+      { effective_date: "2026-08-10", event_type: "reward_redemption_undo", point_delta: 6 },
+    ], "2026-08-10")).toEqual({ balance: 0, receivedThisWeek: 0, redeemedThisWeek: 0 });
   });
 });

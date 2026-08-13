@@ -62,7 +62,7 @@ export function getPointSummary(events: PointEventSummaryInput[], currentDate: s
   return events.reduce((summary, event) => ({
     balance: summary.balance + event.point_delta,
     receivedToday: summary.receivedToday + (event.effective_date === currentDate && event.point_delta > 0 ? event.point_delta : 0),
-    redeemedToday: summary.redeemedToday + (event.effective_date === currentDate && event.event_type === "reward_redemption" ? Math.abs(event.point_delta) : 0),
+    redeemedToday: summary.redeemedToday + (event.effective_date === currentDate && (event.event_type === "reward_redemption" || event.event_type === "reward_redemption_undo") ? -event.point_delta : 0),
   }), { balance: 0, receivedToday: 0, redeemedToday: 0 });
 }
 
@@ -73,7 +73,7 @@ export function getWeeklyPointSummary(events: PointEventSummaryInput[], currentW
   return events.reduce((summary, event) => ({
     balance: summary.balance + event.point_delta,
     receivedThisWeek: summary.receivedThisWeek + (event.effective_date >= currentWeekStart && event.event_type === "task_completion" ? event.point_delta : 0),
-    redeemedThisWeek: summary.redeemedThisWeek + (event.effective_date >= currentWeekStart && event.event_type === "reward_redemption" ? Math.abs(event.point_delta) : 0),
+    redeemedThisWeek: summary.redeemedThisWeek + (event.effective_date >= currentWeekStart && (event.event_type === "reward_redemption" || event.event_type === "reward_redemption_undo") ? -event.point_delta : 0),
   }), { balance: 0, receivedThisWeek: 0, redeemedThisWeek: 0 });
 }
 
@@ -82,7 +82,7 @@ export function getResetPointSummary(events: ResetPointEvent[], currentWeekStart
   return newWeekEvents.reduce((summary, event) => ({
     balance: summary.balance + event.point_delta,
     receivedThisWeek: summary.receivedThisWeek + (event.event_type === "task_completion" ? event.point_delta : 0),
-    redeemedThisWeek: summary.redeemedThisWeek + (event.event_type === "reward_redemption" ? Math.abs(event.point_delta) : 0),
+    redeemedThisWeek: summary.redeemedThisWeek + ((event.event_type === "reward_redemption" || event.event_type === "reward_redemption_undo") ? -event.point_delta : 0),
   }), { balance: reset.remaining_points, receivedThisWeek: reset.received_points, redeemedThisWeek: reset.redeemed_points });
 }
 

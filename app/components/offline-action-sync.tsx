@@ -30,6 +30,7 @@ export function useOfflineActionSync(parentId: string) {
         try {
           if (action.kind === "complete") ({ error } = await supabase.rpc("queue_task_completion", { p_child_id: action.childId, p_task_id: action.taskId!, p_effective_date: action.effectiveDate!, p_points: action.pointDelta, p_request_id: action.id }));
           else if (action.kind === "undo") ({ error } = await supabase.rpc("queue_task_undo", { p_event_id: action.eventId!, p_request_id: action.id }));
+          else if (action.kind === "undo_reward") ({ error } = await supabase.rpc("queue_reward_undo", { p_event_id: action.eventId!, p_request_id: action.id }));
           else ({ error } = await supabase.rpc("queue_reward_redemption", { p_child_id: action.childId, p_reward_id: action.rewardId!, p_cost: Math.abs(action.pointDelta!), p_request_id: action.id }));
         } catch (caught) {
           error = { message: caught instanceof Error ? caught.message : "Unable to reach SmartPoints." };

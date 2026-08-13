@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-11 — SmartPoints now launches the installed PWA from an immediate cached daily workspace, supports queued offline completion/redemption/Undo from that workspace, and refreshes authoritative data in the background when online. Revision `64f0dff` fixes online first launches with no saved snapshot and is deployed to Vercel production; its health endpoint is healthy.
+2026-08-13 — SmartPoints now supports a one-time, immutable Undo for current-week reward redemptions in both online and cached mobile activity views. It syncs idempotently offline, nets redeemed totals/statistics correctly, and migration `202608130001` is applied to linked development; the verified change is not yet pushed or deployed.
 
 ## Current position
 
@@ -29,6 +29,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 04-mobile-offline-launch | F1 — Cached launch contract | Complete: see `docs/plans/04-mobile-offline-launch/task-01-result.md`. |
 | 04-mobile-offline-launch | F2–F4 — Cached daily workspace, refresh, and cache boundary | Complete: see `docs/plans/04-mobile-offline-launch/task-02-result.md`. |
 | 04-mobile-offline-launch | Online first-launch regression | Complete locally: see `docs/plans/04-mobile-offline-launch/task-03-result.md`; pending push/deployment. |
+| 05-reward-redemption-undo | F1–F3 — Reward redemption Undo | Complete locally: see `docs/plans/05-reward-redemption-undo/task-01-result.md`; pending push/deployment. |
 
 ## Verified state
 
@@ -54,6 +55,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - The workspace menu includes Install app, opening a native browser prompt where supported or the Safari Add to Home Screen flow for iPhone.
 - The browser favicon, manifest icon, and iPhone Apple touch icon use the emerald/teal task-completion mark; browser rendering does not depend on an external icon font.
 - Installed PWAs start at the static cached-workspace route, so a saved daily workspace is visible before a network navigation. The route uses the established idempotent queue for offline daily actions and transitions to the authoritative route only after online queued work clears.
+- Original current-week reward redemptions have a one-time Undo that adds an immutable linked reversal. The linked development database migration is applied; production remains unchanged until explicitly deployed.
 - Release policy requires staging/preview validation before production and an explicit current-conversation production request.
 
 ## Required before the next task can be fully verified
@@ -63,7 +65,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Next task
 
-1. Push and deploy the verified online first-launch regression fix when authorized, then run an installed-iPhone manual matrix: first online save, offline relaunch, completion/redemption/Undo, reconnect reconciliation, sign-out clearing, and delayed-online refresh.
+1. Push and deploy the verified reward-redemption Undo change when authorized, then run an installed-iPhone matrix including offline reward Undo and reconnect reconciliation.
 2. Resolve and verify the browser-authenticated child-profile query error in production.
 3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
 

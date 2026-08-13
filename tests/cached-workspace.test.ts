@@ -9,6 +9,7 @@ describe("cached daily workspace", () => {
     expect(page).toContain("queueCompletion");
     expect(page).toContain("queueReward");
     expect(page).toContain("queueUndo");
+    expect(page).toContain("queueRewardUndo");
     expect(page).toContain("snapshot.events");
   });
 
