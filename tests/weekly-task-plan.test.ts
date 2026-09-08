@@ -22,4 +22,10 @@ describe("weekly task plan", () => {
       { created_at: "2026-08-04T11:00:00Z", effective_date: "2026-08-04", event_type: "reward_redemption", point_delta: -2 },
     ], "2026-08-03", { remaining_points: 10, received_points: 3, redeemed_points: 1, reset_at: "2026-08-04T10:00:00Z", week_start: "2026-08-03" })).toEqual({ balance: 8, receivedThisWeek: 3, redeemedThisWeek: 3 });
   });
+
+  it("carries post-reset activity from a prior week into the remaining balance", () => {
+    expect(getResetPointSummary([
+      { created_at: "2026-08-04T11:00:00Z", effective_date: "2026-08-04", event_type: "task_completion", point_delta: 4 },
+    ], "2026-08-10", { remaining_points: 10, received_points: 3, redeemed_points: 1, reset_at: "2026-08-04T10:00:00Z", week_start: "2026-08-03" })).toEqual({ balance: 14, receivedThisWeek: 0, redeemedThisWeek: 0 });
+  });
 });

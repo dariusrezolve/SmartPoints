@@ -78,12 +78,16 @@ export function getWeeklyPointSummary(events: PointEventSummaryInput[], currentW
 }
 
 export function getResetPointSummary(events: ResetPointEvent[], currentWeekStart: string, reset: WeeklyPointReset) {
-  const newWeekEvents = events.filter((event) => event.created_at > reset.reset_at && event.effective_date >= currentWeekStart);
-  return newWeekEvents.reduce((summary, event) => ({
+  const postResetEvents = events.filter((event) => event.created_at > reset.reset_at);
+  return postResetEvents.reduce((summary, event) => ({
     balance: summary.balance + event.point_delta,
-    receivedThisWeek: summary.receivedThisWeek + (event.event_type === "task_completion" ? event.point_delta : 0),
-    redeemedThisWeek: summary.redeemedThisWeek + ((event.event_type === "reward_redemption" || event.event_type === "reward_redemption_undo") ? -event.point_delta : 0),
-  }), { balance: reset.remaining_points, receivedThisWeek: reset.received_points, redeemedThisWeek: reset.redeemed_points });
+    receivedThisWeek: summary.receivedThisWeek + (event.effective_date >= currentWeekStart && event.event_type === "task_completion" ? event.point_delta : 0),
+    redeemedThisWeek: summary.redeemedThisWeek + (event.effective_date >= currentWeekStart && (event.event_type === "reward_redemption" || event.event_type === "reward_redemption_undo") ? -event.point_delta : 0),
+  }), {
+    balance: reset.remaining_points,
+    receivedThisWeek: reset.week_start === currentWeekStart ? reset.received_points : 0,
+    redeemedThisWeek: reset.week_start === currentWeekStart ? reset.redeemed_points : 0,
+  });
 }
 
 export const starterTasks = [

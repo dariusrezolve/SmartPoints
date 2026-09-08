@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-13 — SmartPoints now supports a one-time, immutable Undo for current-week reward redemptions in both online and cached mobile activity views. It syncs idempotently offline, nets redeemed totals/statistics correctly, and revision `33698f4` plus migration `202608130001` are deployed to production; the health endpoint is healthy.
+2026-09-08 — SmartPoints now carries post-reset ledger activity into later weeks' remaining balance while keeping received and redeemed figures week-scoped. This code-only repair is locally verified; no database data or schema was changed.
 
 ## Current position
 
@@ -30,6 +30,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 04-mobile-offline-launch | F2–F4 — Cached daily workspace, refresh, and cache boundary | Complete: see `docs/plans/04-mobile-offline-launch/task-02-result.md`. |
 | 04-mobile-offline-launch | Online first-launch regression | Complete locally: see `docs/plans/04-mobile-offline-launch/task-03-result.md`; pending push/deployment. |
 | 05-reward-redemption-undo | F1–F3 — Reward redemption Undo | Complete locally: see `docs/plans/05-reward-redemption-undo/task-01-result.md`; pending push/deployment. |
+| 06-weekly-balance-carry-forward | F1 — Carry weekly balance forward after a reset | Complete locally: see `docs/plans/06-weekly-balance-carry-forward/task-01-result.md`. |
 
 ## Verified state
 
@@ -56,6 +57,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - The browser favicon, manifest icon, and iPhone Apple touch icon use the emerald/teal task-completion mark; browser rendering does not depend on an external icon font.
 - Installed PWAs start at the static cached-workspace route, so a saved daily workspace is visible before a network navigation. The route uses the established idempotent queue for offline daily actions and transitions to the authoritative route only after online queued work clears.
 - Original current-week reward redemptions have a one-time Undo that adds an immutable linked reversal. The linked development database migration is applied; production remains unchanged until explicitly deployed.
+- A weekly reset remains its own week’s correction anchor; events created after it always contribute to remaining balance across later weeks, while received/redeemed totals restart each Monday.
 - Release policy requires staging/preview validation before production and an explicit current-conversation production request.
 
 ## Required before the next task can be fully verified
@@ -68,6 +70,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 1. Push and deploy the verified reward-redemption Undo change when authorized, then run an installed-iPhone matrix including offline reward Undo and reconnect reconciliation.
 2. Resolve and verify the browser-authenticated child-profile query error in production.
 3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
+4. When database credentials are available, verify the affected hosted `weekly_point_resets` and `point_events` rows against the repaired calculation.
 
 ## Resume protocol
 
