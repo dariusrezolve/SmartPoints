@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-08 — SmartPoints now carries post-reset ledger activity into later weeks' remaining balance while keeping received and redeemed figures week-scoped. This code-only repair is locally verified; no database data or schema was changed.
+2026-09-26 — Centered action notifications and timed rewards are deployed to Vercel production. Migrations `202609260004` and `202609260005` are applied and the live health route is verified.
 
 ## Current position
 
@@ -31,6 +31,14 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 04-mobile-offline-launch | Online first-launch regression | Complete locally: see `docs/plans/04-mobile-offline-launch/task-03-result.md`; pending push/deployment. |
 | 05-reward-redemption-undo | F1–F3 — Reward redemption Undo | Complete locally: see `docs/plans/05-reward-redemption-undo/task-01-result.md`; pending push/deployment. |
 | 06-weekly-balance-carry-forward | F1 — Carry weekly balance forward after a reset | Complete locally: see `docs/plans/06-weekly-balance-carry-forward/task-01-result.md`. |
+| 07-multi-family-onboarding | F1 — First-child onboarding and ownership | Complete locally: see `docs/plans/07-multi-family-onboarding/task-01-result.md`. |
+| 07-multi-family-onboarding | F2 — Optional starter catalog | Complete locally: see `docs/plans/07-multi-family-onboarding/task-02-result.md`. |
+| 07-multi-family-onboarding | F3 — Family-scoped authorization matrix | Complete locally: see `docs/plans/07-multi-family-onboarding/task-03-result.md`. |
+| 07-multi-family-onboarding | Production release | Complete: Vercel preview and production deployments are healthy; migrations `202609260001`–`202609260003` are applied to the linked production database. |
+| 08-centered-action-notifications | F1 — Centered action notifications | Deployed: see `docs/plans/08-centered-action-notifications/task-01-result.md`. |
+| 09-timed-rewards | F1 — Timed reward configuration | Complete locally: see `docs/plans/09-timed-rewards/task-01-result.md`. |
+| 09-timed-rewards | F2 — Persistent redemption timer | Complete locally: see `docs/plans/09-timed-rewards/task-02-result.md`. |
+| 09-timed-rewards | F3 — Countdown and end alert | Deployed: see `docs/plans/09-timed-rewards/task-03-result.md`. |
 
 ## Verified state
 
@@ -59,6 +67,12 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Original current-week reward redemptions have a one-time Undo that adds an immutable linked reversal. The linked development database migration is applied; production remains unchanged until explicitly deployed.
 - A weekly reset remains its own week’s correction anchor; events created after it always contribute to remaining balance across later weeks, while received/redeemed totals restart each Monday.
 - Release policy requires staging/preview validation before production and an explicit current-conversation production request.
+- A fresh parent can create a first child through an empty-family setup screen. The protected database RPC atomically writes the child, household settings, and owner membership; existing missing owner memberships are repaired by migration `202609260001`.
+- Each child setup form has an explicit, unchecked starter-list choice. When selected, the atomic setup RPC copies the approved six daily tasks and five rewards into that child only, with no point or redemption history.
+- Child records, catalog entries, daily selections, and point operations are isolated per child. The local authorization matrix proves that unrelated parents cannot access supplied foreign IDs and shared parents operate only on their explicitly shared child. Shared weekly resets now use that same access boundary.
+- Task and reward feedback is locally updated to a large centered card: emerald for earned points, amber for redeemed points, slate for offline work, and red for errors.
+- Rewards can be marked Time based. Their configured duration is optional, child-owned, and constrained to 1–1,440 minutes. Each timed redemption snapshots that duration and atomically extends a child-local timer; Undo reverses the recorded duration.
+- Timed reward cards show the active countdown after redemption and preserve it across refresh. Reaching zero in an open workspace creates the centered alert and a short tone, plus a browser notification where permission was already granted.
 
 ## Required before the next task can be fully verified
 
@@ -67,10 +81,10 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Next task
 
-1. Push and deploy the verified reward-redemption Undo change when authorized, then run an installed-iPhone matrix including offline reward Undo and reconnect reconciliation.
-2. Resolve and verify the browser-authenticated child-profile query error in production.
-3. Complete the remaining F3–F6 polish: task/reward editing and hiding, current-week day navigation, richer summary, and integration accessibility review.
-4. When database credentials are available, verify the affected hosted `weekly_point_resets` and `point_events` rows against the repaired calculation.
+1. Run a browser-authenticated production walkthrough: signup, first-child creation, optional starter copy, an independent second family, and a shared-parent invitation.
+2. Configure an isolated preview Supabase/Auth backend if future releases require an end-to-end staging signup check.
+3. Deploy the locally verified centered action notification change when authorized.
+4. Run the production browser walkthrough for the deployed timed reward configuration, redemption, extension, Undo, and expiry alert.
 
 ## Resume protocol
 

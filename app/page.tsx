@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FirstChildSetup } from "@/app/components/first-child-setup";
 import { PointsWorkspace } from "@/app/components/points-workspace";
 import { Card } from "@/app/components/ui/card";
 import { getCurrentLocalDate, getResetPointSummary, getWeekStart, getWeeklyPointSummary, shiftWeek } from "@/lib/points/validation";
@@ -58,12 +59,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const currentDate = getCurrentLocalDate(timeZone);
   const currentWeekStart = getWeekStart(currentDate);
   const viewedWeekStart = week && /^\d{4}-\d{2}-\d{2}$/.test(week) && getWeekStart(week) === week ? week : currentWeekStart;
-  const [{ data: tasks }, { data: rewards }, { data: dailyTaskSelections }, { data: pointResets }] = selectedChild ? await Promise.all([
+  const [{ data: tasks }, { data: rewards }, { data: dailyTaskSelections }, { data: pointResets }, { data: rewardTimers }] = selectedChild ? await Promise.all([
     supabase.from("tasks").select("id, name, points, icon").eq("child_id", selectedChild.id).eq("is_active", true).order("created_at"),
-    supabase.from("rewards").select("id, name, cost, icon").eq("child_id", selectedChild.id).eq("is_active", true).order("created_at"),
+    supabase.from("rewards").select("id, name, cost, icon, duration_minutes").eq("child_id", selectedChild.id).eq("is_active", true).order("created_at"),
     supabase.from("daily_task_selections").select("task_id").eq("child_id", selectedChild.id),
     supabase.from("weekly_point_resets").select("week_start, remaining_points, received_points, redeemed_points, reset_at").eq("child_id", selectedChild.id).order("reset_at", { ascending: false }).limit(1),
-  ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+    supabase.from("reward_timers").select("reward_id, ends_at").eq("child_id", selectedChild.id).gt("ends_at", new Date().toISOString()),
+  ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
   const latestReset = pointResets?.[0] ?? null;
   let recentActivityQuery = supabase.from("point_events").select("id, event_type, point_delta, effective_date, task_id, reward_id, reversal_of, created_at").eq("child_id", selectedChild?.id ?? "").gte("effective_date", viewedWeekStart).lt("effective_date", shiftWeek(viewedWeekStart, 1)).order("created_at", { ascending: false }).limit(100);
   if (latestReset) recentActivityQuery = recentActivityQuery.gt("created_at", latestReset.reset_at);
@@ -79,7 +81,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <>
       {error ? <p className="mx-auto mt-4 w-full max-w-5xl rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{error}</p> : null}
-      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} initialManager={manage === "tasks" || manage === "rewards" ? manage : undefined} initialNotice={message} isCurrentWeek={viewedWeekStart === currentWeekStart} key={`${selectedChild.id}:${manage ?? "dashboard"}`} parentId={claims.claims.sub} pointSummary={pointSummary} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} /> : null}
+      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} initialManager={manage === "tasks" || manage === "rewards" ? manage : undefined} initialNotice={message} isCurrentWeek={viewedWeekStart === currentWeekStart} key={`${selectedChild.id}:${manage ?? "dashboard"}`} parentId={claims.claims.sub} pointSummary={pointSummary} rewardTimers={rewardTimers ?? []} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} /> : <FirstChildSetup />}
     </>
   );
 }

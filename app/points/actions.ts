@@ -12,6 +12,15 @@ function value(formData: FormData, name: string): string {
   return typeof item === "string" ? item : "";
 }
 
+function rewardDurationMinutes(formData: FormData): number | null {
+  if (value(formData, "timeBased") !== "on") return null;
+  const durationMinutes = Number(value(formData, "durationMinutes"));
+  if (!Number.isSafeInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 1440) {
+    throw new Error("Duration must be a whole number between 1 and 1440 minutes.");
+  }
+  return durationMinutes;
+}
+
 async function parentId(): Promise<string> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
@@ -91,11 +100,12 @@ export async function createReward(formData: FormData) {
   await parentId();
   let name: string;
   let cost: number;
+  let durationMinutes: number | null;
   const icon = value(formData, "icon") || "Star";
-  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
+  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); durationMinutes = rewardDurationMinutes(formData); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
   catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward.", "rewards"); }
   const supabase = await createClient();
-  const { error } = await supabase.from("rewards").insert({ child_id: childId, name, cost, icon });
+  const { error } = await supabase.from("rewards").insert({ child_id: childId, name, cost, icon, duration_minutes: durationMinutes });
   if (error) fail(childId, "Unable to add reward.", "rewards");
   done(childId, "rewards");
 }
@@ -106,11 +116,12 @@ export async function updateReward(formData: FormData) {
   await parentId();
   let name: string;
   let cost: number;
+  let durationMinutes: number | null;
   const icon = value(formData, "icon");
-  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
+  try { name = normalizeTitle(value(formData, "name"), "Reward"); cost = normalizePointValue(value(formData, "cost"), "Reward cost"); durationMinutes = rewardDurationMinutes(formData); if (!isTaskIcon(icon)) throw new Error("Choose a valid reward icon."); }
   catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid reward.", "rewards"); }
   const supabase = await createClient();
-  const { data, error } = await supabase.from("rewards").update({ name, cost, icon }).eq("id", rewardId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
+  const { data, error } = await supabase.from("rewards").update({ name, cost, icon, duration_minutes: durationMinutes }).eq("id", rewardId).eq("child_id", childId).eq("is_active", true).select("id").maybeSingle();
   if (error || !data) fail(childId, "Unable to update reward.", "rewards");
   done(childId, "rewards");
 }

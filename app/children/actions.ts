@@ -22,7 +22,7 @@ function getString(formData: FormData, name: string): string {
 }
 
 export async function createChild(formData: FormData) {
-  const parentId = await getAuthenticatedParentId();
+  await getAuthenticatedParentId();
   const supabase = await createClient();
   let displayName: string;
 
@@ -33,27 +33,20 @@ export async function createChild(formData: FormData) {
   }
 
   const timeZone = resolveHouseholdTimeZone(getString(formData, "timeZone"));
-  const { error: settingsError } = await supabase
-    .from("parent_settings")
-    .upsert({ id: parentId, time_zone: timeZone }, { onConflict: "id", ignoreDuplicates: true });
+  const useStarterTemplate = getString(formData, "useStarterTemplate") === "on";
+  const { data: childId, error: childError } = await supabase.rpc("create_child_profile", {
+    p_display_name: displayName,
+    p_time_zone: timeZone,
+    p_use_starter_template: useStarterTemplate,
+  });
 
-  if (settingsError) {
-    redirect("/?error=Unable%20to%20save%20household%20settings.");
-  }
-
-  const { data: child, error: childError } = await supabase
-    .from("children")
-    .insert({ parent_id: parentId, display_name: displayName })
-    .select("id")
-    .single();
-
-  if (childError || !child) {
+  if (childError || typeof childId !== "string") {
     const message = childError?.code === "23505" ? "An active child already uses that name." : "Unable to create child profile.";
     redirect(`/?error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/");
-  redirect(`/?child=${child.id}`);
+  redirect(`/?child=${childId}`);
 }
 
 export async function renameChild(formData: FormData) {

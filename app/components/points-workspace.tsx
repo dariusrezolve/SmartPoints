@@ -14,15 +14,18 @@ import { TaskIcon } from "@/lib/points/task-icons";
 import { applyPendingPointActions } from "@/lib/offline/optimistic-summary";
 import type { TaskIconName } from "@/lib/points/validation";
 import { shiftWeek } from "@/lib/points/validation";
+import { formatTimerRemaining } from "@/lib/rewards/timers";
 
 type Child = { id: string; display_name: string };
 type Task = { id: string; name: string; points: number; icon: TaskIconName };
-type Reward = { id: string; name: string; cost: number; icon: TaskIconName };
+type Reward = { id: string; name: string; cost: number; icon: TaskIconName; duration_minutes: number | null };
+type RewardTimer = { reward_id: string; ends_at: string };
 type Event = { id: string; event_type: string; point_delta: number; effective_date: string; task_id: string | null; reward_id: string | null; reversal_of: string | null };
 type PointSummary = { balance: number; receivedThisWeek: number; redeemedThisWeek: number };
-type Props = { parentId: string; childId: string; childName: string; childProfiles: Child[]; currentDate: string; currentWeekStart: string; initialManager?: "tasks" | "rewards"; initialNotice?: string; isCurrentWeek: boolean; pointSummary: PointSummary; taskCatalog: Task[]; tasks: Task[]; rewards: Reward[]; events: Event[]; timeZone: string };
+type Props = { parentId: string; childId: string; childName: string; childProfiles: Child[]; currentDate: string; currentWeekStart: string; initialManager?: "tasks" | "rewards"; initialNotice?: string; isCurrentWeek: boolean; pointSummary: PointSummary; rewardTimers: RewardTimer[]; taskCatalog: Task[]; tasks: Task[]; rewards: Reward[]; events: Event[]; timeZone: string };
+type ToastKind = "task" | "redeem" | "success" | "offline" | "error";
 
-export function PointsWorkspace({ parentId, childId, childName, childProfiles, currentDate, currentWeekStart, initialManager, initialNotice, isCurrentWeek, pointSummary, taskCatalog, tasks, rewards, events, timeZone }: Props) {
+export function PointsWorkspace({ parentId, childId, childName, childProfiles, currentDate, currentWeekStart, initialManager, initialNotice, isCurrentWeek, pointSummary, rewardTimers, taskCatalog, tasks, rewards, events, timeZone }: Props) {
   const taskNames = new Map(taskCatalog.map((task) => [task.id, task.name]));
   const rewardNames = new Map(rewards.map((reward) => [reward.id, reward.name]));
   const router = useRouter();
@@ -34,9 +37,12 @@ export function PointsWorkspace({ parentId, childId, childName, childProfiles, c
     ...action,
     pointDelta: action.pointDelta ?? (action.kind === "complete" ? taskPoints.get(action.taskId!) : action.kind === "redeem" ? -(rewardCosts.get(action.rewardId!) ?? 0) : -(eventDeltas.get(action.eventId!) ?? 0)),
   })));
-  const [toast, setToast] = useState<{ kind: "success" | "offline" | "error"; message: string } | null>(initialNotice ? { kind: "success", message: initialNotice } : null);
+  const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(initialNotice ? { kind: "success", message: initialNotice } : null);
   const toastRef = useRef<HTMLDivElement>(null);
   const [lastTappedTaskId, setLastTappedTaskId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => new Date());
+  const endedTimerKeys = useRef(new Set<string>());
+  const timerEndsAt = new Map(rewardTimers.map((timer) => [timer.reward_id, timer.ends_at]));
   useEffect(() => {
     if (!toast) return;
     const frame = window.requestAnimationFrame(() => {
@@ -45,27 +51,48 @@ export function PointsWorkspace({ parentId, childId, childName, childProfiles, c
     const timeout = window.setTimeout(() => setToast(null), 3500);
     return () => { window.cancelAnimationFrame(frame); window.clearTimeout(timeout); };
   }, [toast]);
-  function showToast(kind: "success" | "offline" | "error", message: string) { setToast({ kind, message }); }
-  async function submitPointAction(action: Parameters<typeof queue>[0], successMessage: string) {
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+  function showToast(kind: ToastKind, message: string) { setToast({ kind, message }); }
+  useEffect(() => {
+    for (const timer of rewardTimers) {
+      if (new Date(timer.ends_at).getTime() > now.getTime() || endedTimerKeys.current.has(timer.ends_at)) continue;
+      endedTimerKeys.current.add(timer.ends_at);
+      const reward = rewards.find((item) => item.id === timer.reward_id);
+      const message = `${reward?.name ?? "Timed reward"} is over.`;
+      showToast("redeem", message);
+      const audioContext = new AudioContext();
+      const oscillator = audioContext.createOscillator();
+      oscillator.connect(audioContext.destination);
+      oscillator.frequency.value = 880;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.18);
+      oscillator.addEventListener("ended", () => void audioContext.close());
+      if ("Notification" in window && Notification.permission === "granted") new Notification("SmartPoints timer", { body: message });
+    }
+  }, [now, rewardTimers, rewards]);
+  async function submitPointAction(action: Parameters<typeof queue>[0], successToast: { kind: ToastKind; message: string }) {
     try {
       const queuedAction = await queue(action);
       const result = await sync(queuedAction.id);
-      if (result.status === "synced") { showToast("success", successMessage); router.refresh(); return; }
+      if (result.status === "synced") { showToast(successToast.kind, successToast.message); router.refresh(); return; }
       if (result.status === "offline" || result.status === "queued") { showToast("offline", "Saved for sync when you are back online."); return; }
       showToast("error", `Couldn't add points. ${result.reason ?? "Please try again."}`);
     } catch (caught) {
       showToast("error", `Couldn't add points. ${caught instanceof Error ? caught.message : "Please try again."}`);
     }
   }
-  async function queueCompletion(taskId: string) { const points = taskPoints.get(taskId) ?? 0; setLastTappedTaskId(taskId); window.setTimeout(() => setLastTappedTaskId((current) => current === taskId ? null : current), 550); await submitPointAction({ childId, kind: "complete", taskId, effectiveDate: currentDate, pointDelta: points }, `Points added: +${points}.`); }
-  async function queueUndo(eventId: string) { await submitPointAction({ childId, kind: "undo", eventId, pointDelta: -(eventDeltas.get(eventId) ?? 0) }, "Task completion undone."); }
-  async function queueRewardUndo(eventId: string) { await submitPointAction({ childId, kind: "undo_reward", eventId, pointDelta: -(eventDeltas.get(eventId) ?? 0) }, "Reward redemption undone."); }
-  async function queueReward(rewardId: string) { await submitPointAction({ childId, kind: "redeem", rewardId, pointDelta: -(rewardCosts.get(rewardId) ?? 0) }, "Reward redeemed."); }
+  async function queueCompletion(taskId: string) { const points = taskPoints.get(taskId) ?? 0; setLastTappedTaskId(taskId); window.setTimeout(() => setLastTappedTaskId((current) => current === taskId ? null : current), 550); await submitPointAction({ childId, kind: "complete", taskId, effectiveDate: currentDate, pointDelta: points }, { kind: "task", message: `Points added: +${points}.` }); }
+  async function queueUndo(eventId: string) { await submitPointAction({ childId, kind: "undo", eventId, pointDelta: -(eventDeltas.get(eventId) ?? 0) }, { kind: "success", message: "Task completion undone." }); }
+  async function queueRewardUndo(eventId: string) { await submitPointAction({ childId, kind: "undo_reward", eventId, pointDelta: -(eventDeltas.get(eventId) ?? 0) }, { kind: "success", message: "Reward redemption undone." }); }
+  async function queueReward(rewardId: string) { const cost = rewardCosts.get(rewardId) ?? 0; const timerDurationMinutes = rewards.find((reward) => reward.id === rewardId)?.duration_minutes ?? null; await submitPointAction({ childId, kind: "redeem", rewardId, pointDelta: -cost, timerDurationMinutes }, { kind: "redeem", message: `−${cost} points redeemed` }); }
 
   const offlineEvents = events.map((event) => ({ id: event.id, eventType: event.event_type, pointDelta: event.point_delta, effectiveDate: event.effective_date, taskId: event.task_id, rewardId: event.reward_id, taskName: event.task_id ? taskNames.get(event.task_id) : undefined, rewardName: event.reward_id ? rewardNames.get(event.reward_id) : undefined, icon: event.task_id ? taskCatalog.find((task) => task.id === event.task_id)?.icon : event.reward_id ? rewards.find((reward) => reward.id === event.reward_id)?.icon : undefined }));
 
   return <main className="workspace-page mx-auto w-full max-w-5xl px-5 pb-10 pt-6"><OfflineSnapshotWriter balance={optimisticPointSummary.balance} childId={childId} childName={childName} currentDate={currentDate} events={offlineEvents} parentId={parentId} receivedThisWeek={optimisticPointSummary.receivedThisWeek} redeemedThisWeek={optimisticPointSummary.redeemedThisWeek} rewards={rewards} tasks={tasks}/>
-    {toast ? <div aria-live="polite" className={`fixed inset-x-4 bottom-5 mx-auto max-w-md rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold text-white shadow-2xl backdrop-blur-xl ${toast.kind === "success" ? "bg-gradient-to-r from-emerald-600 to-teal-600" : toast.kind === "offline" ? "bg-gradient-to-r from-slate-700 to-slate-800" : "bg-gradient-to-r from-rose-600 to-red-600"}`} popover="manual" ref={toastRef} role="status"><span className="flex items-center gap-3">{toast.kind === "success" ? <CheckCircle2 aria-hidden="true" size={20}/> : toast.kind === "offline" ? <WifiOff aria-hidden="true" size={20}/> : <CircleAlert aria-hidden="true" size={20}/>}<span>{toast.message}</span></span></div> : null}
+    {toast ? <div aria-live="polite" className={`fixed left-1/2 top-1/2 z-[100] m-0 w-[min(calc(100vw-2rem),28rem)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border-4 border-white px-6 py-5 text-center text-lg font-extrabold text-white shadow-2xl ${toast.kind === "task" || toast.kind === "success" ? "bg-emerald-700" : toast.kind === "redeem" ? "bg-amber-500" : toast.kind === "offline" ? "bg-slate-800" : "bg-rose-700"}`} popover="manual" ref={toastRef} role="status"><span className="flex items-center justify-center gap-3">{toast.kind === "task" || toast.kind === "success" ? <CheckCircle2 aria-hidden="true" size={28}/> : toast.kind === "redeem" ? <Gift aria-hidden="true" size={28}/> : toast.kind === "offline" ? <WifiOff aria-hidden="true" size={28}/> : <CircleAlert aria-hidden="true" size={28}/>}<span>{toast.message}</span></span></div> : null}
     <header className="mb-6">
       <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-emerald-700 sm:text-base"><Sparkles aria-hidden="true" size={17}/>{isCurrentWeek ? currentDate : `Week of ${currentWeekStart}`}</p><h1 className="mt-2 bg-gradient-to-r from-slate-950 via-emerald-950 to-teal-800 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent sm:text-4xl">{childName}&apos;s points</h1><div className="mt-3 flex flex-wrap items-center gap-2"><Link aria-label="Previous week" className="inline-flex h-10 items-center gap-1 rounded-xl border border-emerald-200/90 bg-white/80 px-3 text-sm font-semibold text-emerald-800 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-emerald-50" href={`/?child=${childId}&week=${shiftWeek(currentWeekStart, -1)}`}><ChevronLeft aria-hidden="true" size={16}/>Previous</Link><Link aria-label="Next week" className="inline-flex h-10 items-center gap-1 rounded-xl border border-emerald-200/90 bg-white/80 px-3 text-sm font-semibold text-emerald-800 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-emerald-50" href={`/?child=${childId}&week=${shiftWeek(currentWeekStart, 1)}`}>Next<ChevronRight aria-hidden="true" size={16}/></Link>{!isCurrentWeek ? <Link className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 text-sm font-semibold text-white shadow-sm" href={`/?child=${childId}`}><CalendarDays aria-hidden="true" size={15}/>Current week</Link> : null}</div></div>
         <WorkspaceMenu childId={childId} childName={childName} childProfiles={childProfiles} currentWeekStart={currentWeekStart} initialManager={initialManager} pointSummary={optimisticPointSummary} rewards={rewards} selectedTaskIds={new Set(tasks.map((task) => task.id))} taskCatalog={taskCatalog} timeZone={timeZone}/>
@@ -83,7 +110,7 @@ export function PointsWorkspace({ parentId, childId, childName, childProfiles, c
         {tasks.length === 0 ? <p className="mt-5 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">Use Set daily tasks to choose what can be completed.</p> : null}
       </Card>
       <Card className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold tracking-tight text-slate-950">Rewards</h2><Button aria-label="Add a reward" asChild size="icon" variant="outline"><Link href={`/?child=${childId}&week=${currentWeekStart}&manage=rewards`}><Plus aria-hidden="true" size={18}/></Link></Button></div><p className="mt-1 text-sm text-slate-500">Redeem now, even when points go below zero.</p>
-        <div className="mt-5 grid gap-2">{rewards.map((reward) => <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50/80 to-orange-50/40 px-3 py-2.5" key={reward.id}><span className="flex items-center gap-3 text-sm font-semibold text-slate-800"><span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 text-amber-700"><TaskIcon aria-hidden="true" name={reward.icon} size={21}/></span><span>{reward.name}<small className="mt-0.5 block font-medium text-slate-500">{reward.cost} points</small></span></span><Button className="from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" onClick={() => void queueReward(reward.id)} size="sm" type="button">Redeem</Button></div>)}</div>
+        <div className="mt-5 grid gap-2">{rewards.map((reward) => { const endsAt = timerEndsAt.get(reward.id); const timerText = endsAt ? formatTimerRemaining(endsAt, now) : null; return <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50/80 to-orange-50/40 px-3 py-2.5" key={reward.id}><span className="flex items-center gap-3 text-sm font-semibold text-slate-800"><span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 text-amber-700"><TaskIcon aria-hidden="true" name={reward.icon} size={21}/></span><span>{reward.name}<small className="mt-0.5 block font-medium text-slate-500">{reward.cost} points{reward.duration_minutes ? ` · ${reward.duration_minutes} min` : ""}</small>{timerText ? <strong className={timerText === "Time is up" ? "mt-1 block text-xs text-rose-700" : "mt-1 block text-xs text-amber-800"} role="timer">{timerText}</strong> : null}</span></span><Button className="from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600" onClick={() => void queueReward(reward.id)} size="sm" type="button">Redeem</Button></div>; })}</div>
         {rewards.length === 0 ? <p className="mt-5 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">Add a reward when you are ready to redeem points.</p> : null}
       </Card>
     </section>
