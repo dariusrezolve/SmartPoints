@@ -18,6 +18,8 @@ The locally verified Tasks header + flow adds each newly created task to the sel
 
 The locally verified timer-limit update adds a Timer limits menu entry for each child. It defaults to 60 active timed minutes and 120 net timed minutes per local day, rejects excess direct and queued redemptions atomically, and returns both allowances when a timed reward is undone. It has not yet been deployed.
 
+The locally verified Star Trail gives each child a Magic Kingdom quest card that can be hidden from the workspace menu. Every net task point in the current week earns one star. Reaching 5, 10, 20, and 35 stars unlocks weekly titles and points bonuses; the permanent badge collection remains available on the separate Achievements page. It has not yet been deployed.
+
 ## Important limitations
 
 - Task/reward editing and hiding, prior-day current-week entry, complete weekly navigation, and the full dashboard summary are not implemented yet.

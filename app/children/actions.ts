@@ -134,3 +134,10 @@ export async function updateChildTimerLimits(formData: FormData) {
   revalidatePath("/");
   redirect(`/?child=${encodeURIComponent(childId)}&message=Timer%20limits%20saved.`);
 }
+
+export async function updateStarTrailVisibility(formData: FormData) {
+  await getAuthenticatedParentId(); const childId = getString(formData, "childId"); const supabase = await createClient();
+  const { error } = await supabase.rpc("set_star_trail_visibility", { p_child_id: childId, p_show_star_trail: getString(formData, "showStarTrail") === "on" });
+  if (error) redirect(`/?child=${encodeURIComponent(childId)}&error=Unable%20to%20update%20Star%20Trail.`);
+  revalidatePath("/"); redirect(`/?child=${encodeURIComponent(childId)}`);
+}

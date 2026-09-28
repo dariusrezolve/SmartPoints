@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-26 — Centered action notifications and timed rewards are deployed to Vercel production. Migrations `202609260004` and `202609260005` are applied and the live health route is verified.
+2026-09-28 — Star Trail is verified locally, including its Magic Kingdom dashboard card, per-child visibility control, and full-point star calculation. It has not been deployed.
 
 ## Current position
 
@@ -44,6 +44,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 12-manager-reopen | F1 — Reopen task and reward managers | Complete locally: see `docs/plans/12-manager-reopen/task-01-result.md`. |
 | 13-quick-add-daily-task | F1 — Quick-add task selection | Complete locally: see `docs/plans/13-quick-add-daily-task/task-01-result.md`. |
 | 14-child-timer-limits | F1–F2 — Per-child timer settings and atomic enforcement | Complete locally: see `docs/plans/14-child-timer-limits/task-01-result.md` and `task-02-result.md`. |
+| 15-star-trail-achievements | F1–F3 — Per-child Star Trail and badge history | Complete locally: see `docs/plans/15-star-trail-achievements/task-02-result.md`. |
 
 ## Verified state
 
@@ -83,6 +84,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Closing task and reward managers clears their opening route state through Next.js, so each header + button can reopen its manager.
 - A task created through the Tasks header + is selected for that child’s daily task list in the same database operation.
 - Each child has independent active and daily timed-reward limits. Defaults are 60 active minutes and 120 net timed minutes per local calendar day; the workspace menu can change them. Timed redemption checks run under a child-specific transaction lock, and Undo returns both active and daily capacity.
+- Each child can show or hide a child-friendly Magic Kingdom Star Trail. Every net task point earns one current-week star; milestones at 5, 10, 20, and 35 stars award weekly titles and bonus points. Achievements are permanent, child-scoped badge history. The local database test covers a 10-point task reaching two milestones and reverses each affected bonus on Undo.
 
 ## Required before the next task can be fully verified
 
@@ -100,6 +102,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 7. Implement header + task creation that immediately selects the new task for the daily list.
 8. Deploy the locally verified mobile responsiveness, activity Undo, manager reopening, and quick-add task updates when authorized.
 9. Deploy the locally verified per-child timer-limit settings and enforcement when authorized.
+10. Deploy the locally verified Star Trail and Magic Kingdom dashboard when authorized.
 
 ## Resume protocol
 

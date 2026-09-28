@@ -1,0 +1,14 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(4);
+insert into auth.users(id,email) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','star-trail@example.test');
+set local role authenticated;
+set local request.jwt.claim.sub = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+select public.create_child_profile('Star trail child','Europe/Bucharest',false);
+insert into public.tasks(child_id,name,points,icon) values((select id from public.children where display_name='Star trail child'),'Big help',10,'Star');
+select lives_ok($$select public.queue_task_completion((select id from public.children where display_name='Star trail child'),(select id from public.tasks where name='Big help'),current_date,10,'30000000-0000-0000-0000-000000000001')$$,'a ten-point task completes');
+select results_eq($$select point_delta from public.point_events where event_type='achievement_bonus' order by point_delta$$,array[2,3],'ten stars award the five- and ten-star bonuses');
+select lives_ok($$select public.queue_task_undo((select id from public.point_events where event_type='task_completion' order by created_at limit 1),'30000000-0000-0000-0000-000000000002')$$,'undo completes');
+select results_eq($$select point_delta from public.point_events where event_type='achievement_bonus_undo' order by point_delta$$,array[-3,-2],'undo reverses every bonus no longer reached');
+select * from finish();
+rollback;
