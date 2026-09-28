@@ -39,6 +39,11 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 09-timed-rewards | F1 — Timed reward configuration | Complete locally: see `docs/plans/09-timed-rewards/task-01-result.md`. |
 | 09-timed-rewards | F2 — Persistent redemption timer | Complete locally: see `docs/plans/09-timed-rewards/task-02-result.md`. |
 | 09-timed-rewards | F3 — Countdown and end alert | Deployed: see `docs/plans/09-timed-rewards/task-03-result.md`. |
+| 10-mobile-action-responsiveness | F1 — Responsive, duplicate-safe daily actions | Complete locally: see `docs/plans/10-mobile-action-responsiveness/task-01-result.md`. |
+| 11-activity-undo-state | F1 — Accurate activity Undo state | Complete locally: see `docs/plans/11-activity-undo-state/task-01-result.md`. |
+| 12-manager-reopen | F1 — Reopen task and reward managers | Complete locally: see `docs/plans/12-manager-reopen/task-01-result.md`. |
+| 13-quick-add-daily-task | F1 — Quick-add task selection | Complete locally: see `docs/plans/13-quick-add-daily-task/task-01-result.md`. |
+| 14-child-timer-limits | F1–F2 — Per-child timer settings and atomic enforcement | Complete locally: see `docs/plans/14-child-timer-limits/task-01-result.md` and `task-02-result.md`. |
 
 ## Verified state
 
@@ -73,6 +78,11 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - Task and reward feedback is locally updated to a large centered card: emerald for earned points, amber for redeemed points, slate for offline work, and red for errors.
 - Rewards can be marked Time based. Their configured duration is optional, child-owned, and constrained to 1–1,440 minutes. Each timed redemption snapshots that duration and atomically extends a child-local timer; Undo reverses the recorded duration.
 - Timed reward cards show the active countdown after redemption and preserve it across refresh. Reaching zero in an open workspace creates the centered alert and a short tone, plus a browser notification where permission was already granted.
+- A daily task or reward tap acknowledges immediately, and its card blocks only duplicate pending taps while reconciliation completes. Centered notifications do not intercept taps on the workspace.
+- Activity rows retain task and reward Undo controls only until their linked reversal exists; cached mobile activity uses the same rule.
+- Closing task and reward managers clears their opening route state through Next.js, so each header + button can reopen its manager.
+- A task created through the Tasks header + is selected for that child’s daily task list in the same database operation.
+- Each child has independent active and daily timed-reward limits. Defaults are 60 active minutes and 120 net timed minutes per local calendar day; the workspace menu can change them. Timed redemption checks run under a child-specific transaction lock, and Undo returns both active and daily capacity.
 
 ## Required before the next task can be fully verified
 
@@ -85,6 +95,11 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 2. Configure an isolated preview Supabase/Auth backend if future releases require an end-to-end staging signup check.
 3. Deploy the locally verified centered action notification change when authorized.
 4. Run the production browser walkthrough for the deployed timed reward configuration, redemption, extension, Undo, and expiry alert.
+5. Deploy the locally verified mobile action responsiveness update when authorized.
+6. Deploy the locally verified activity Undo state update when authorized.
+7. Implement header + task creation that immediately selects the new task for the daily list.
+8. Deploy the locally verified mobile responsiveness, activity Undo, manager reopening, and quick-add task updates when authorized.
+9. Deploy the locally verified per-child timer-limit settings and enforcement when authorized.
 
 ## Resume protocol
 

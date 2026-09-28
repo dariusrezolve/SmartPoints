@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarCheck2, ChevronDown, Download, Gift, ListTodo, LogOut, Menu as MenuIcon, Plus, RotateCcw, Share, Share2, SquarePlus, Users, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BarChart3, CalendarCheck2, ChevronDown, Clock3, Download, Gift, ListTodo, LogOut, Menu as MenuIcon, Plus, RotateCcw, Share, Share2, SquarePlus, Users, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from "react";
-import { archiveChild, createChild, renameChild, updateHouseholdTimeZone } from "@/app/children/actions";
+import { archiveChild, createChild, renameChild, updateChildTimerLimits, updateHouseholdTimeZone } from "@/app/children/actions";
 import { archiveReward, archiveTask, createReward, createTask, resetWeeklyPoints, setWeeklyTasks, updateReward, updateTask } from "@/app/points/actions";
 import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
@@ -16,12 +17,12 @@ import { createInvitation } from "@/app/invitations/actions";
 type Child = { id: string; display_name: string };
 type Task = { id: string; name: string; points: number; icon: TaskIconName };
 type Reward = { id: string; name: string; cost: number; icon: TaskIconName; duration_minutes: number | null };
-type ModalName = "task" | "reward" | "dailyTasks" | "family" | "install" | "resetWeek" | "share" | null;
+type ModalName = "task" | "reward" | "dailyTasks" | "family" | "timerLimits" | "install" | "resetWeek" | "share" | null;
 type ManagerName = "tasks" | "rewards";
 type PointSummary = { balance: number; receivedThisWeek: number; redeemedThisWeek: number };
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
-type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; initialManager?: ManagerName; pointSummary: PointSummary; rewards: Reward[]; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string };
+type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; initialManager?: ManagerName; pointSummary: PointSummary; quickAddDailyTask: boolean; rewards: Reward[]; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string; timerLimits: { max_concurrent_minutes: number; max_daily_minutes: number } };
 
 function setBrowserTimeZone(event: FormEvent<HTMLFormElement>) {
   const timeZoneField = event.currentTarget.elements.namedItem("timeZone");
@@ -50,7 +51,8 @@ function WorkspaceModal({ active, children, onClose, title }: { active: boolean;
   </dialog>;
 }
 
-export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekStart, initialManager, pointSummary, rewards, selectedTaskIds, taskCatalog, timeZone }: Props) {
+export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekStart, initialManager, pointSummary, quickAddDailyTask, rewards, selectedTaskIds, taskCatalog, timeZone, timerLimits }: Props) {
+  const router = useRouter();
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [activeModal, setActiveModal] = useState<ModalName>(initialManager === "tasks" ? "task" : initialManager === "rewards" ? "reward" : null);
   const [selectedIcon, setSelectedIcon] = useState<TaskIconName>("CircleCheck");
@@ -77,13 +79,6 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
   }, []);
 
   useEffect(() => {
-    if (!initialManager) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("manage");
-    window.history.replaceState(null, "", url);
-  }, [initialManager]);
-
-  useEffect(() => {
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
     const updateStandaloneState = () => setIsStandalone(standaloneQuery.matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
     const captureInstallPrompt = (event: Event) => { event.preventDefault(); setDeferredInstallPrompt(event as BeforeInstallPromptEvent); };
@@ -102,6 +97,11 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
   function switchModal(modal: Exclude<ModalName, null>) {
     setActiveModal(null);
     window.requestAnimationFrame(() => setActiveModal(modal));
+  }
+
+  function closeManager() {
+    setActiveModal(null);
+    router.replace(`/?child=${childId}&week=${currentWeekStart}`);
   }
 
   async function installApp() {
@@ -125,6 +125,7 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
         <Button className="w-full justify-start" onClick={() => openModal("task")} role="menuitem" size="sm" type="button" variant="ghost"><ListTodo aria-hidden="true" size={16}/>Edit tasks</Button>
         <Button className="w-full justify-start" onClick={() => openModal("reward")} role="menuitem" size="sm" type="button" variant="ghost"><Gift aria-hidden="true" size={16}/>Edit rewards</Button>
         <Button className="w-full justify-start" onClick={() => openModal("dailyTasks")} role="menuitem" size="sm" type="button" variant="ghost"><CalendarCheck2 aria-hidden="true" size={16}/>Set daily tasks</Button>
+        <Button className="w-full justify-start" onClick={() => openModal("timerLimits")} role="menuitem" size="sm" type="button" variant="ghost"><Clock3 aria-hidden="true" size={16}/>Timer limits</Button>
         <Button className="w-full justify-start" onClick={() => openModal("install")} role="menuitem" size="sm" type="button" variant="ghost"><Download aria-hidden="true" size={16}/>Install app</Button>
         <div className="my-2 border-t border-emerald-100"/>
         <Button className="w-full justify-start text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => openModal("resetWeek")} role="menuitem" size="sm" type="button" variant="ghost"><RotateCcw aria-hidden="true" size={16}/>Reset this week</Button>
@@ -133,15 +134,15 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
       </Card>
     </details>
 
-    <WorkspaceModal active={activeModal === "task"} onClose={() => setActiveModal(null)} title="Edit tasks">
+    <WorkspaceModal active={activeModal === "task"} onClose={closeManager} title="Edit tasks">
       <p className="mt-2 text-sm text-slate-500">Update a task&apos;s name, points, or icon. Archiving removes it from daily tasks and keeps past points intact.</p>
       <section className="mt-5 grid gap-2">{taskCatalog.map((task) => <article className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2" key={task.id}><span className="flex items-center gap-3"><TaskIcon aria-hidden="true" name={task.icon} size={24}/><span><strong className="block text-sm text-slate-900">{task.name}</strong><small className="text-slate-500">+{task.points} points</small></span></span><span className="flex gap-1"><Button onClick={() => { setSelectedEditTaskIcon(task.icon); setEditingTask(task); }} size="sm" type="button" variant="outline">Edit</Button><Button onClick={() => setTaskToDelete(task)} size="sm" type="button" variant="ghost">Delete</Button></span></article>)}</section>
       {taskCatalog.length === 0 ? <p className="mt-5 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">No active tasks yet. Create one below.</p> : null}
-      <section className="mt-6 border-t border-slate-200 pt-5"><h3 className="text-sm font-semibold text-slate-900">Create a task</h3><p className="mt-1 text-sm text-slate-500">Add a starter task or make one just for {childName}.</p><div className="mt-4 flex flex-wrap gap-2">{starterTasks.map((task) => <form action={createTask} key={task.name}><input name="childId" type="hidden" value={childId}/><input name="name" type="hidden" value={task.name}/><input name="points" type="hidden" value={task.points}/><input name="icon" type="hidden" value={task.icon}/><input name="starterKey" type="hidden" value={task.name.toLowerCase().replaceAll(" ", "-")}/><Button size="sm" type="submit" variant="outline"><TaskIcon aria-hidden="true" name={task.icon} size={16}/>Add {task.name} (+{task.points})</Button></form>)}</div>
-      <form action={createTask} className="mt-5 grid gap-3 sm:grid-cols-[1fr_7rem_auto] sm:items-end"><input name="childId" type="hidden" value={childId}/><input name="icon" type="hidden" value={selectedIcon}/><label className="grid gap-1 text-sm font-medium text-slate-700">Name<Input maxLength={80} name="name" required/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Points<Input min="1" name="points" required type="number"/></label><Button type="submit">Create task</Button><fieldset className="sm:col-span-3"><legend className="text-sm font-medium text-slate-700">Icon</legend><div className="mt-2 flex flex-wrap gap-2">{taskIconNames.map((icon) => <Button aria-label={`Use ${icon} icon`} aria-pressed={selectedIcon === icon} className={selectedIcon === icon ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-100" : undefined} key={icon} onClick={() => setSelectedIcon(icon)} size="icon" type="button" variant="outline"><TaskIcon aria-hidden="true" name={icon} size={19}/></Button>)}</div></fieldset></form></section>
+      <section className="mt-6 border-t border-slate-200 pt-5"><h3 className="text-sm font-semibold text-slate-900">Create a task</h3><p className="mt-1 text-sm text-slate-500">Add a starter task or make one just for {childName}.</p><div className="mt-4 flex flex-wrap gap-2">{starterTasks.map((task) => <form action={createTask} key={task.name}><input name="childId" type="hidden" value={childId}/>{quickAddDailyTask ? <input name="quickAddDailyTask" type="hidden" value="on"/> : null}<input name="name" type="hidden" value={task.name}/><input name="points" type="hidden" value={task.points}/><input name="icon" type="hidden" value={task.icon}/><input name="starterKey" type="hidden" value={task.name.toLowerCase().replaceAll(" ", "-")}/><Button size="sm" type="submit" variant="outline"><TaskIcon aria-hidden="true" name={task.icon} size={16}/>Add {task.name} (+{task.points})</Button></form>)}</div>
+      <form action={createTask} className="mt-5 grid gap-3 sm:grid-cols-[1fr_7rem_auto] sm:items-end"><input name="childId" type="hidden" value={childId}/>{quickAddDailyTask ? <input name="quickAddDailyTask" type="hidden" value="on"/> : null}<input name="icon" type="hidden" value={selectedIcon}/><label className="grid gap-1 text-sm font-medium text-slate-700">Name<Input maxLength={80} name="name" required/></label><label className="grid gap-1 text-sm font-medium text-slate-700">Points<Input min="1" name="points" required type="number"/></label><Button type="submit">Create task</Button><fieldset className="sm:col-span-3"><legend className="text-sm font-medium text-slate-700">Icon</legend><div className="mt-2 flex flex-wrap gap-2">{taskIconNames.map((icon) => <Button aria-label={`Use ${icon} icon`} aria-pressed={selectedIcon === icon} className={selectedIcon === icon ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-100" : undefined} key={icon} onClick={() => setSelectedIcon(icon)} size="icon" type="button" variant="outline"><TaskIcon aria-hidden="true" name={icon} size={19}/></Button>)}</div></fieldset></form></section>
     </WorkspaceModal>
 
-    <WorkspaceModal active={activeModal === "reward"} onClose={() => setActiveModal(null)} title="Edit rewards">
+    <WorkspaceModal active={activeModal === "reward"} onClose={closeManager} title="Edit rewards">
       <p className="mt-2 text-sm text-slate-500">Rewards are reusable and can be redeemed before points are earned.</p>
       <section className="mt-5 grid gap-2">{rewards.map((reward) => <article className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2" key={reward.id}><span className="flex items-center gap-3"><TaskIcon aria-hidden="true" name={reward.icon} size={24}/><span><strong className="block text-sm text-slate-900">{reward.name}</strong><small className="text-slate-500">{reward.cost} points{reward.duration_minutes ? ` · ${reward.duration_minutes} min` : ""}</small></span></span><span className="flex gap-1"><Button onClick={() => { setSelectedEditRewardIcon(reward.icon); setEditingRewardTimeBased(reward.duration_minutes !== null); setEditingReward(reward); }} size="sm" type="button" variant="outline">Edit</Button><Button onClick={() => setRewardToDelete(reward)} size="sm" type="button" variant="ghost">Delete</Button></span></article>)}</section>
       {rewards.length === 0 ? <p className="mt-5 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">No rewards yet. Create one below.</p> : null}
@@ -181,6 +182,16 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
           {dailyTaskIds.size === 0 ? <div className="mt-3 grid place-items-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 px-4 py-6 text-center"><Plus aria-hidden="true" className="text-emerald-500" size={22}/><p className="mt-2 text-sm font-semibold text-slate-700">Your daily list is empty</p><p className="mt-1 text-xs text-slate-500">Tap an available task to add it.</p></div> : null}
         </section>
         {taskCatalog.length === 0 ? <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">Create a task first, then add it to the daily list.</p> : <Button className="mt-5 w-full" type="submit">Save daily list</Button>}
+      </form>
+    </WorkspaceModal>
+
+    <WorkspaceModal active={activeModal === "timerLimits"} onClose={() => setActiveModal(null)} title="Timer limits">
+      <p className="mt-2 text-sm text-slate-500">Set how many timed-reward minutes {childName} can have running at once and redeem in one day.</p>
+      <form action={updateChildTimerLimits} className="mt-5 grid gap-4">
+        <input name="childId" type="hidden" value={childId}/>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">Consecutive timer events (minutes)<Input defaultValue={timerLimits.max_concurrent_minutes} max="1440" min="1" name="maxConcurrentMinutes" required type="number"/></label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">Total timer events per day (minutes)<Input defaultValue={timerLimits.max_daily_minutes} max="1440" min="1" name="maxDailyMinutes" required type="number"/></label>
+        <Button type="submit">Save timer limits</Button>
       </form>
     </WorkspaceModal>
 

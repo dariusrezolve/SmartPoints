@@ -10,6 +10,14 @@ The deployed notification update displays a large centered card after points act
 
 The deployed timed-reward update lets parents mark a reward as Time based with a duration from 1 to 1,440 minutes. Redeeming extends that child’s active countdown for the reward, while Undo removes the recorded duration. The countdown appears on the reward card and, when it ends in an open workspace, shows the centered alert and plays a short tone.
 
+The locally verified mobile responsiveness update immediately acknowledges a daily task or reward tap, prevents duplicate pending taps on that same card, and keeps the centered notification from blocking other workspace controls. It has not yet been deployed.
+
+The locally verified activity update hides Undo after the corresponding task or reward action has already been reversed, including from cached mobile activity, and labels active controls by action type. It has not yet been deployed.
+
+The locally verified Tasks header + flow adds each newly created task to the selected child’s daily task list automatically. It has not yet been deployed.
+
+The locally verified timer-limit update adds a Timer limits menu entry for each child. It defaults to 60 active timed minutes and 120 net timed minutes per local day, rejects excess direct and queued redemptions atomically, and returns both allowances when a timed reward is undone. It has not yet been deployed.
+
 ## Important limitations
 
 - Task/reward editing and hiding, prior-day current-week entry, complete weekly navigation, and the full dashboard summary are not implemented yet.

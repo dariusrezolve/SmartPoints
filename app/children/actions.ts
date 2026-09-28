@@ -21,6 +21,12 @@ function getString(formData: FormData, name: string): string {
   return typeof value === "string" ? value : "";
 }
 
+function getTimerMinutes(formData: FormData, name: string, label: string): number {
+  const value = Number(getString(formData, name));
+  if (!Number.isInteger(value) || value < 1 || value > 1440) throw new Error(`${label} must be a whole number between 1 and 1440 minutes.`);
+  return value;
+}
+
 export async function createChild(formData: FormData) {
   await getAuthenticatedParentId();
   const supabase = await createClient();
@@ -109,4 +115,22 @@ export async function updateHouseholdTimeZone(formData: FormData) {
 
   revalidatePath("/");
   redirect("/");
+}
+
+export async function updateChildTimerLimits(formData: FormData) {
+  await getAuthenticatedParentId();
+  const childId = getString(formData, "childId");
+  let maxConcurrentMinutes: number;
+  let maxDailyMinutes: number;
+  try {
+    maxConcurrentMinutes = getTimerMinutes(formData, "maxConcurrentMinutes", "Concurrent timer limit");
+    maxDailyMinutes = getTimerMinutes(formData, "maxDailyMinutes", "Daily timer limit");
+  } catch (error) {
+    redirect(`/?child=${encodeURIComponent(childId)}&error=${encodeURIComponent(error instanceof Error ? error.message : "Invalid timer limit.")}`);
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_child_timer_limits", { p_child_id: childId, p_max_concurrent_minutes: maxConcurrentMinutes!, p_max_daily_minutes: maxDailyMinutes! });
+  if (error) redirect(`/?child=${encodeURIComponent(childId)}&error=Unable%20to%20update%20timer%20limits.`);
+  revalidatePath("/");
+  redirect(`/?child=${encodeURIComponent(childId)}&message=Timer%20limits%20saved.`);
 }

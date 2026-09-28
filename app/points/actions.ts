@@ -62,7 +62,10 @@ export async function createTask(formData: FormData) {
   }
   catch (error) { fail(childId, error instanceof Error ? error.message : "Invalid task.", "tasks"); }
   const supabase = await createClient();
-  const { error } = await supabase.from("tasks").insert({ child_id: childId, name, points, icon, starter_key: value(formData, "starterKey") || null });
+  const quickAddDailyTask = value(formData, "quickAddDailyTask") === "on";
+  const { error } = quickAddDailyTask
+    ? await supabase.rpc("create_task_and_select_daily", { p_child_id: childId, p_name: name, p_points: points, p_icon: icon, p_starter_key: value(formData, "starterKey") || null })
+    : await supabase.from("tasks").insert({ child_id: childId, name, points, icon, starter_key: value(formData, "starterKey") || null });
   if (error) fail(childId, "Unable to add task.", "tasks");
   done(childId, "tasks");
 }

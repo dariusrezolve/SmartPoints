@@ -1,0 +1,11 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(2);
+insert into auth.users(id,email) values('88888888-8888-8888-8888-888888888888','quick-add@example.test');
+set local role authenticated;
+set local request.jwt.claim.sub = '88888888-8888-8888-8888-888888888888';
+select public.create_child_profile('Quick add child', 'Europe/Bucharest', false);
+select lives_ok($$select public.create_task_and_select_daily((select id from public.children where display_name='Quick add child'),'Quick task',2,'CircleCheck',null)$$, 'creates a selected task');
+select ok(exists(select 1 from public.daily_task_selections selection join public.tasks task on task.id=selection.task_id where task.name='Quick task'), 'new task is selected for the daily list');
+select * from finish();
+rollback;

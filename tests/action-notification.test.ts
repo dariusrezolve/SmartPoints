@@ -11,4 +11,14 @@ describe("centered action notifications", () => {
     expect(workspace).toContain('kind: "task"');
     expect(workspace).toContain('kind: "redeem"');
   });
+
+  it("acknowledges a tap before sync, leaves the notification non-blocking, and prevents duplicate pending taps", async () => {
+    const workspace = await readFile(new URL("../app/components/points-workspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain("pointer-events-none");
+    expect(workspace).toContain("pendingActionKeysRef");
+    expect(workspace).toContain('disabled={!isCurrentWeek || pendingActionKeys.has(`complete:${task.id}`)}');
+    expect(workspace).toContain('disabled={pendingActionKeys.has(`redeem:${reward.id}`)}');
+    expect(workspace).toContain("Saved. Syncing…");
+  });
 });
