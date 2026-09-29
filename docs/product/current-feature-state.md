@@ -18,11 +18,9 @@ The deployed Tasks header + flow adds each newly created task to the selected ch
 
 The deployed timer-limit update adds a Timer limits menu entry for each child. It defaults to 60 active timed minutes and 120 net timed minutes per local day, rejects excess direct and queued redemptions atomically, and returns both allowances when a timed reward is undone.
 
-A local, unreleased fix now shows the timer-limit rejection in the workspace instead of leaving that invalid redemption waiting for offline sync. The local Playwright suite verifies this behavior on an isolated Supabase stack.
+The deployed sync fix shows a timer-limit rejection in the workspace instead of leaving that invalid redemption waiting for offline sync. The local Playwright suite verifies this behavior on an isolated Supabase stack.
 
-The deployed Star Trail gives each child a Magic Kingdom quest card that can be hidden from the workspace menu. Every net task point in the current week earns one star. Reaching 5, 10, 20, and 35 stars unlocks weekly titles and points bonuses; the permanent badge collection remains available on the separate Achievements page.
-
-Locally implemented, pending release: the **Star Trails** menu page lets a parent preview and select Magic Kingdom, Hogwarts Adventure, or Middle-earth Journey for each child, and show or hide that child's trail. The dashboard uses the chosen visual theme. Existing badges keep their earned name and theme; new badges use the theme selected when they are earned. Star thresholds and bonus values are unchanged.
+The deployed **Star Trails** menu page lets a parent preview and select Magic Kingdom, Hogwarts Adventure, or Middle-earth Journey for each child, and show or hide that child's trail. Every net task point in the current week earns one star. Reaching 5, 10, 20, and 35 stars unlocks weekly titles and points bonuses; the permanent badge collection remains available on the Achievements page. Existing badges keep their earned name and theme; new badges use the theme selected when they are earned. Star thresholds and bonus values are unchanged.
 
 ## Important limitations
 

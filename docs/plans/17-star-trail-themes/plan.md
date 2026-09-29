@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved by the user on 2026-09-29. F1 and F2 complete locally; no push or deployment.
+Approved by the user on 2026-09-29. F1 and F2 deployed to production on 2026-09-29; see `production-release-result.md`.
 
 ## Outcome
 

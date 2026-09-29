@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-29 — Completed the approved per-child Star Trail theme plan locally. Magic Kingdom, Hogwarts Adventure, and Middle-earth Journey have child-scoped settings, live previews, dashboard designs, and themed badge snapshots. Isolated local pgTAP and all four Chromium browser tests pass, as do lint, typecheck, 80 unit tests, and build. No push or deployment.
+2026-09-29 — Deployed the approved per-child Star Trail themes and point-sync fix to Vercel production after a preview build. The two theme migrations are applied to linked Supabase and a repeat dry run is up to date. Production public health and sign-in checks pass; the protected Star Trails route redirects unauthenticated visitors. Local pgTAP and all four Chromium browser tests pass. See `docs/plans/17-star-trail-themes/production-release-result.md`.
 
 ## Current position
 
@@ -46,7 +46,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 14-child-timer-limits | F1–F2 — Per-child timer settings and atomic enforcement | Deployed: see `docs/plans/14-child-timer-limits/task-01-result.md` and `task-02-result.md`. |
 | 15-star-trail-achievements | F1–F3 — Per-child Star Trail and badge history | Deployed: see `docs/plans/15-star-trail-achievements/production-release-result.md`. |
 | 16-e2e-browser-suite | F1–F4 — Isolated local Playwright suite | Complete locally: see `docs/plans/16-e2e-browser-suite/task-01-result.md` through `task-04-result.md`. |
-| 17-star-trail-themes | F1–F2 — Per-child themes and badge snapshots | Complete locally: see `docs/plans/17-star-trail-themes/task-01-result.md` and `task-02-result.md`. |
+| 17-star-trail-themes | F1–F2 — Per-child themes and badge snapshots | Deployed: see `docs/plans/17-star-trail-themes/production-release-result.md`. |
 
 ## Verified state
 
@@ -87,9 +87,9 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - A task created through the Tasks header + is selected for that child’s daily task list in the same database operation.
 - Each child has independent active and daily timed-reward limits. Defaults are 60 active minutes and 120 net timed minutes per local calendar day; the workspace menu can change them. Timed redemption checks run under a child-specific transaction lock, and Undo returns both active and daily capacity.
 - Each child can show or hide a child-friendly Magic Kingdom Star Trail. Every net task point earns one current-week star; milestones at 5, 10, 20, and 35 stars award weekly titles and bonus points. Achievements are permanent, child-scoped badge history. The local database test covers a 10-point task reaching two milestones and reverses each affected bonus on Undo.
-- Locally, each child can choose Magic Kingdom, Hogwarts Adventure, or Middle-earth Journey from a Star Trails page with previews and a visibility control. Theme and visibility save together for that child. Awards snapshot the theme and name when earned; switching keeps historical names. The local pgTAP suite and Chromium browser flow cover this behavior.
+- Each child can choose Magic Kingdom, Hogwarts Adventure, or Middle-earth Journey from the deployed Star Trails page with previews and a visibility control. Theme and visibility save together for that child. Awards snapshot the theme and name when earned; switching keeps historical names. The local pgTAP suite and Chromium browser flow cover this behavior.
 - `npm run e2e` uses an unlinked local Supabase stack with a separate project ID and ports. It applies migrations, runs pgTAP, then tests onboarding, points, sharing, and a mobile viewport in Chromium. The existing local stack and hosted database are outside its target.
-- Local point sync now removes SQL validation failures from the offline queue and shows the rejection reason; network failures stay queued.
+- Point sync removes SQL validation failures from the offline queue and shows the rejection reason; network failures stay queued.
 
 ## Required before the next task can be fully verified
 
@@ -98,9 +98,9 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 ## Next task
 
-1. Await a separately requested release before pushing, deploying, or applying the two theme migrations to production.
+1. Plan and verify a Next.js patch update: the current runtime audit reports a critical advisory for the installed version, though the cited Windows and AVIF conditions do not appear to be used by this deployment.
 2. Run a browser-authenticated production walkthrough for the deployed flows using authorized test accounts.
-3. Run `npm run e2e` locally after installing Chromium when browser regression coverage is needed. The suite is implemented; see `e2e/README.md`.
+3. Continue to run `npm run e2e` only on its dedicated local Supabase stack; see `e2e/README.md`.
 4. Configure an isolated preview Supabase/Auth backend before future preview data testing.
 
 ## Resume protocol
