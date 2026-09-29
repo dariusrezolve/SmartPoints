@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "e2e": "node scripts/e2e/run.mjs",
     "deploy:vercel": "bash scripts/deploy-vercel.sh",
     "db:start": "bash scripts/supabase-start.sh",
     "db:migrate:local": "bash scripts/supabase-migrate.sh local",
@@ -32,6 +33,7 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "latest",
     "@types/react": "latest",

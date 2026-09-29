@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { normalizeChildName, resolveHouseholdTimeZone } from "@/lib/children/validation";
 import { createClient } from "@/lib/supabase/server";
+import { isStarTrailThemeKey } from "@/lib/achievements/themes";
 
 async function getAuthenticatedParentId(): Promise<string> {
   const supabase = await createClient();
@@ -140,4 +141,19 @@ export async function updateStarTrailVisibility(formData: FormData) {
   const { error } = await supabase.rpc("set_star_trail_visibility", { p_child_id: childId, p_show_star_trail: getString(formData, "showStarTrail") === "on" });
   if (error) redirect(`/?child=${encodeURIComponent(childId)}&error=Unable%20to%20update%20Star%20Trail.`);
   revalidatePath("/"); redirect(`/?child=${encodeURIComponent(childId)}`);
+}
+
+export async function updateStarTrailPreferences(formData: FormData) {
+  await getAuthenticatedParentId();
+  const childId = getString(formData, "childId");
+  const themeKey = getString(formData, "themeKey");
+  if (!isStarTrailThemeKey(themeKey)) redirect(`/star-trails?child=${encodeURIComponent(childId)}&error=Choose%20a%20valid%20trail.`);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_star_trail_preferences", {
+    p_child_id: childId, p_theme_key: themeKey, p_show_star_trail: getString(formData, "showStarTrail") === "on",
+  });
+  if (error) redirect(`/star-trails?child=${encodeURIComponent(childId)}&error=Unable%20to%20save%20Star%20Trail.`);
+  revalidatePath("/");
+  revalidatePath("/star-trails");
+  redirect(`/star-trails?child=${encodeURIComponent(childId)}&saved=1`);
 }

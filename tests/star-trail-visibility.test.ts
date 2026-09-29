@@ -10,8 +10,8 @@ describe("Star Trail visibility", () => {
     ]);
 
     expect(migration).toContain("show_star_trail boolean not null default true");
-    expect(menu).toContain("EyeOff");
-    expect(menu).toContain("Show Star Trail");
+    expect(menu).toContain("Stars");
+    expect(menu).toContain("Star Trails");
     expect(workspace).toContain("showStarTrail");
   });
 });

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BarChart3, CalendarCheck2, ChevronDown, Clock3, Download, Eye, EyeOff, Gift, ListTodo, LogOut, Menu as MenuIcon, Plus, RotateCcw, Share, Share2, SquarePlus, Users, X } from "lucide-react";
+import { BarChart3, CalendarCheck2, ChevronDown, Clock3, Download, Gift, ListTodo, LogOut, Menu as MenuIcon, Plus, RotateCcw, Share, Share2, SquarePlus, Stars, Users, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from "react";
-import { archiveChild, createChild, renameChild, updateChildTimerLimits, updateHouseholdTimeZone, updateStarTrailVisibility } from "@/app/children/actions";
+import { archiveChild, createChild, renameChild, updateChildTimerLimits, updateHouseholdTimeZone } from "@/app/children/actions";
 import { archiveReward, archiveTask, createReward, createTask, resetWeeklyPoints, setWeeklyTasks, updateReward, updateTask } from "@/app/points/actions";
 import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
@@ -22,7 +22,7 @@ type ManagerName = "tasks" | "rewards";
 type PointSummary = { balance: number; receivedThisWeek: number; redeemedThisWeek: number };
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
-type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; initialManager?: ManagerName; pointSummary: PointSummary; quickAddDailyTask: boolean; rewards: Reward[]; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string; timerLimits: { max_concurrent_minutes: number; max_daily_minutes: number }; showStarTrail: boolean };
+type Props = { childId: string; childName: string; childProfiles: Child[]; currentWeekStart: string; initialManager?: ManagerName; pointSummary: PointSummary; quickAddDailyTask: boolean; rewards: Reward[]; selectedTaskIds: Set<string>; taskCatalog: Task[]; timeZone: string; timerLimits: { max_concurrent_minutes: number; max_daily_minutes: number } };
 
 function setBrowserTimeZone(event: FormEvent<HTMLFormElement>) {
   const timeZoneField = event.currentTarget.elements.namedItem("timeZone");
@@ -51,7 +51,7 @@ function WorkspaceModal({ active, children, onClose, title }: { active: boolean;
   </dialog>;
 }
 
-export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekStart, initialManager, pointSummary, quickAddDailyTask, rewards, selectedTaskIds, taskCatalog, timeZone, timerLimits, showStarTrail }: Props) {
+export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekStart, initialManager, pointSummary, quickAddDailyTask, rewards, selectedTaskIds, taskCatalog, timeZone, timerLimits }: Props) {
   const router = useRouter();
   const menuRef = useRef<HTMLDetailsElement>(null);
   const [activeModal, setActiveModal] = useState<ModalName>(initialManager === "tasks" ? "task" : initialManager === "rewards" ? "reward" : null);
@@ -126,7 +126,7 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
         <Button className="w-full justify-start" onClick={() => openModal("reward")} role="menuitem" size="sm" type="button" variant="ghost"><Gift aria-hidden="true" size={16}/>Edit rewards</Button>
         <Button className="w-full justify-start" onClick={() => openModal("dailyTasks")} role="menuitem" size="sm" type="button" variant="ghost"><CalendarCheck2 aria-hidden="true" size={16}/>Set daily tasks</Button>
         <Button className="w-full justify-start" onClick={() => openModal("timerLimits")} role="menuitem" size="sm" type="button" variant="ghost"><Clock3 aria-hidden="true" size={16}/>Timer limits</Button>
-        <form action={updateStarTrailVisibility}><input name="childId" type="hidden" value={childId}/><input name="showStarTrail" type="hidden" value={showStarTrail ? "" : "on"}/><Button className="w-full justify-start" role="menuitem" size="sm" type="submit" variant="ghost">{showStarTrail ? <><EyeOff aria-hidden="true" size={16}/>Hide Star Trail</> : <><Eye aria-hidden="true" size={16}/>Show Star Trail</>}</Button></form>
+        <Button asChild className="w-full justify-start" role="menuitem" size="sm" variant="ghost"><Link href={`/star-trails?child=${childId}`}><Stars aria-hidden="true" size={16}/>Star Trails</Link></Button>
         <Button className="w-full justify-start" onClick={() => openModal("install")} role="menuitem" size="sm" type="button" variant="ghost"><Download aria-hidden="true" size={16}/>Install app</Button>
         <div className="my-2 border-t border-emerald-100"/>
         <Button className="w-full justify-start text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => openModal("resetWeek")} role="menuitem" size="sm" type="button" variant="ghost"><RotateCcw aria-hidden="true" size={16}/>Reset this week</Button>

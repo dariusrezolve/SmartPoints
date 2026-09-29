@@ -1,0 +1,37 @@
+import { expect, test } from "@playwright/test";
+import { createFirstChild, registerAndSignIn } from "./helpers";
+
+test("child chooses and hides a trail; previews work at phone width", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await registerAndSignIn(page);
+  await createFirstChild(page, "Trail Kid", false);
+  await expect(page.getByRole("region", { name: "Magic Kingdom Star Trail" })).toBeVisible();
+  await page.locator("details summary").click();
+  await page.getByRole("menuitem", { name: "Star Trails" }).click();
+  await expect(page.getByRole("region", { name: /Star Trail preview/ })).toHaveCount(3);
+  await expect(page.getByRole("heading", { name: "Spell Scholar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fellowship Friend" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "test-results/star-trails-phone.png", fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.screenshot({ path: "test-results/star-trails-desktop.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("label").filter({ has: page.locator('input[value="hogwarts_adventure"]') }).getByText("Choose trail").click();
+  await page.getByRole("button", { name: "Save Star Trail" }).click();
+  await expect(page.getByRole("status")).toContainText("saved");
+  await page.getByRole("link", { name: "Back to points" }).click();
+  await expect(page.getByRole("region", { name: "Hogwarts Adventure Star Trail" })).toBeVisible();
+  await page.locator("details summary").click();
+  await page.getByRole("menuitem", { name: "Star Trails" }).click();
+  await page.getByRole("checkbox", { name: "Show Star Trail" }).uncheck();
+  await page.getByRole("button", { name: "Save Star Trail" }).click();
+  await page.getByRole("link", { name: "Back to points" }).click();
+  await expect(page.getByRole("region", { name: "Hogwarts Adventure Star Trail" })).toHaveCount(0);
+  await page.locator("details summary").click();
+  await page.getByRole("menuitem", { name: "Manage family" }).click();
+  const familyDialog = page.getByRole("dialog", { name: "Manage family" });
+  await familyDialog.getByRole("textbox", { name: "Display name" }).last().fill("Second Trail Kid");
+  await familyDialog.getByRole("button", { name: "Add child" }).click();
+  await expect(page.getByRole("heading", { name: "Second Trail Kid's points" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Magic Kingdom Star Trail" })).toBeVisible();
+});

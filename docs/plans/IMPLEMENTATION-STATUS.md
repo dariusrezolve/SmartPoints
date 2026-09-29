@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-28 — Star Trail is verified locally, including its Magic Kingdom dashboard card, per-child visibility control, and full-point star calculation. It has not been deployed.
+2026-09-29 — Completed the approved per-child Star Trail theme plan locally. Magic Kingdom, Hogwarts Adventure, and Middle-earth Journey have child-scoped settings, live previews, dashboard designs, and themed badge snapshots. Isolated local pgTAP and all four Chromium browser tests pass, as do lint, typecheck, 80 unit tests, and build. No push or deployment.
 
 ## Current position
 
@@ -39,12 +39,14 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 09-timed-rewards | F1 — Timed reward configuration | Complete locally: see `docs/plans/09-timed-rewards/task-01-result.md`. |
 | 09-timed-rewards | F2 — Persistent redemption timer | Complete locally: see `docs/plans/09-timed-rewards/task-02-result.md`. |
 | 09-timed-rewards | F3 — Countdown and end alert | Deployed: see `docs/plans/09-timed-rewards/task-03-result.md`. |
-| 10-mobile-action-responsiveness | F1 — Responsive, duplicate-safe daily actions | Complete locally: see `docs/plans/10-mobile-action-responsiveness/task-01-result.md`. |
-| 11-activity-undo-state | F1 — Accurate activity Undo state | Complete locally: see `docs/plans/11-activity-undo-state/task-01-result.md`. |
-| 12-manager-reopen | F1 — Reopen task and reward managers | Complete locally: see `docs/plans/12-manager-reopen/task-01-result.md`. |
-| 13-quick-add-daily-task | F1 — Quick-add task selection | Complete locally: see `docs/plans/13-quick-add-daily-task/task-01-result.md`. |
-| 14-child-timer-limits | F1–F2 — Per-child timer settings and atomic enforcement | Complete locally: see `docs/plans/14-child-timer-limits/task-01-result.md` and `task-02-result.md`. |
-| 15-star-trail-achievements | F1–F3 — Per-child Star Trail and badge history | Complete locally: see `docs/plans/15-star-trail-achievements/task-02-result.md`. |
+| 10-mobile-action-responsiveness | F1 — Responsive, duplicate-safe daily actions | Deployed: see `docs/plans/10-mobile-action-responsiveness/task-01-result.md`. |
+| 11-activity-undo-state | F1 — Accurate activity Undo state | Deployed: see `docs/plans/11-activity-undo-state/task-01-result.md`. |
+| 12-manager-reopen | F1 — Reopen task and reward managers | Deployed: see `docs/plans/12-manager-reopen/task-01-result.md`. |
+| 13-quick-add-daily-task | F1 — Quick-add task selection | Deployed: see `docs/plans/13-quick-add-daily-task/task-01-result.md`. |
+| 14-child-timer-limits | F1–F2 — Per-child timer settings and atomic enforcement | Deployed: see `docs/plans/14-child-timer-limits/task-01-result.md` and `task-02-result.md`. |
+| 15-star-trail-achievements | F1–F3 — Per-child Star Trail and badge history | Deployed: see `docs/plans/15-star-trail-achievements/production-release-result.md`. |
+| 16-e2e-browser-suite | F1–F4 — Isolated local Playwright suite | Complete locally: see `docs/plans/16-e2e-browser-suite/task-01-result.md` through `task-04-result.md`. |
+| 17-star-trail-themes | F1–F2 — Per-child themes and badge snapshots | Complete locally: see `docs/plans/17-star-trail-themes/task-01-result.md` and `task-02-result.md`. |
 
 ## Verified state
 
@@ -62,7 +64,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - The interface uses a consistent system type scale, emerald/teal brand gradients, warm reward accents, glass-like surfaces, and consistent menu typography across iPhone and desktop layouts.
 - Set daily tasks presents unselected tasks as icon buttons, moves each selected task into a duplicate-safe list, and provides a quick remove control before saving.
 - Tasks and rewards share a curated 32-icon Lucide catalog; the linked Supabase constraints were expanded through migration `202608090007` and verified as up to date on a repeat migration run.
-- A linked hosted Supabase development project has all tracked migrations applied; no secrets are stored in the repository.
+- The linked Supabase project used by Vercel production has all tracked migrations applied; no secrets are stored in the repository.
 - Statistics compare the selected Monday–Sunday week with the prior week, net task undo events, identify improving tasks, and show each reward's share of spending without a third-party chart dependency.
 - Action toasts use the browser top layer so success and failure feedback stays visible above native modal dialogs.
 - Offline daily actions use captured values and idempotency keys. Distinct actions from different devices are additive; duplicate requests are not, and legacy terminal queue items are retried automatically.
@@ -70,7 +72,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - The workspace menu includes Install app, opening a native browser prompt where supported or the Safari Add to Home Screen flow for iPhone.
 - The browser favicon, manifest icon, and iPhone Apple touch icon use the emerald/teal task-completion mark; browser rendering does not depend on an external icon font.
 - Installed PWAs start at the static cached-workspace route, so a saved daily workspace is visible before a network navigation. The route uses the established idempotent queue for offline daily actions and transitions to the authoritative route only after online queued work clears.
-- Original current-week reward redemptions have a one-time Undo that adds an immutable linked reversal. The linked development database migration is applied; production remains unchanged until explicitly deployed.
+- Original current-week reward redemptions have a one-time Undo that adds an immutable linked reversal.
 - A weekly reset remains its own week’s correction anchor; events created after it always contribute to remaining balance across later weeks, while received/redeemed totals restart each Monday.
 - Release policy requires staging/preview validation before production and an explicit current-conversation production request.
 - A fresh parent can create a first child through an empty-family setup screen. The protected database RPC atomically writes the child, household settings, and owner membership; existing missing owner memberships are repaired by migration `202609260001`.
@@ -85,24 +87,21 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - A task created through the Tasks header + is selected for that child’s daily task list in the same database operation.
 - Each child has independent active and daily timed-reward limits. Defaults are 60 active minutes and 120 net timed minutes per local calendar day; the workspace menu can change them. Timed redemption checks run under a child-specific transaction lock, and Undo returns both active and daily capacity.
 - Each child can show or hide a child-friendly Magic Kingdom Star Trail. Every net task point earns one current-week star; milestones at 5, 10, 20, and 35 stars award weekly titles and bonus points. Achievements are permanent, child-scoped badge history. The local database test covers a 10-point task reaching two milestones and reverses each affected bonus on Undo.
+- Locally, each child can choose Magic Kingdom, Hogwarts Adventure, or Middle-earth Journey from a Star Trails page with previews and a visibility control. Theme and visibility save together for that child. Awards snapshot the theme and name when earned; switching keeps historical names. The local pgTAP suite and Chromium browser flow cover this behavior.
+- `npm run e2e` uses an unlinked local Supabase stack with a separate project ID and ports. It applies migrations, runs pgTAP, then tests onboarding, points, sharing, and a mobile viewport in Chromium. The existing local stack and hosted database are outside its target.
+- Local point sync now removes SQL validation failures from the offline queue and shows the rejection reason; network failures stay queued.
 
 ## Required before the next task can be fully verified
 
-- Dedicated production Supabase project and email/recovery configuration before production verification; do not add secrets to the repository.
-- Resolve and verify the reported child-profile query error through a browser-authenticated production session.
+- Run a browser-authenticated production walkthrough for signup, family creation, shared-parent invitation, timers, and Star Trail. The current release has public-route and database-migration checks but no browser E2E suite.
+- Configure an isolated preview Supabase backend before using preview for test accounts or point mutations.
 
 ## Next task
 
-1. Run a browser-authenticated production walkthrough: signup, first-child creation, optional starter copy, an independent second family, and a shared-parent invitation.
-2. Configure an isolated preview Supabase/Auth backend if future releases require an end-to-end staging signup check.
-3. Deploy the locally verified centered action notification change when authorized.
-4. Run the production browser walkthrough for the deployed timed reward configuration, redemption, extension, Undo, and expiry alert.
-5. Deploy the locally verified mobile action responsiveness update when authorized.
-6. Deploy the locally verified activity Undo state update when authorized.
-7. Implement header + task creation that immediately selects the new task for the daily list.
-8. Deploy the locally verified mobile responsiveness, activity Undo, manager reopening, and quick-add task updates when authorized.
-9. Deploy the locally verified per-child timer-limit settings and enforcement when authorized.
-10. Deploy the locally verified Star Trail and Magic Kingdom dashboard when authorized.
+1. Await a separately requested release before pushing, deploying, or applying the two theme migrations to production.
+2. Run a browser-authenticated production walkthrough for the deployed flows using authorized test accounts.
+3. Run `npm run e2e` locally after installing Chromium when browser regression coverage is needed. The suite is implemented; see `e2e/README.md`.
+4. Configure an isolated preview Supabase/Auth backend before future preview data testing.
 
 ## Resume protocol
 

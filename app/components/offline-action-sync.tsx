@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enqueueOfflineAction, listOfflineActions, removeOfflineAction, type OfflineAction } from "@/lib/offline/storage";
+import { classifyPointSyncError } from "@/lib/offline/sync-error";
 
-export type ActionSyncResult = { status: "synced" | "offline" | "queued"; reason?: string };
+export type ActionSyncResult = { status: "synced" | "offline" | "queued" | "rejected"; reason?: string };
 
 export function useOfflineActionSync(parentId: string) {
   const [queued, setQueued] = useState(0);
@@ -26,7 +27,7 @@ export function useOfflineActionSync(parentId: string) {
       const supabase = createClient();
       for (const action of await listOfflineActions()) {
         if (action.parentId !== parentId || (action.status !== "queued" && action.status !== "needs_attention")) continue;
-        let error: { message: string } | null = null;
+        let error: { message: string; code?: string } | null = null;
         try {
           if (action.kind === "complete") ({ error } = await supabase.rpc("queue_task_completion", { p_child_id: action.childId, p_task_id: action.taskId!, p_effective_date: action.effectiveDate!, p_points: action.pointDelta, p_request_id: action.id }));
           else if (action.kind === "undo") ({ error } = await supabase.rpc("queue_task_undo", { p_event_id: action.eventId!, p_request_id: action.id }));
@@ -36,8 +37,10 @@ export function useOfflineActionSync(parentId: string) {
           error = { message: caught instanceof Error ? caught.message : "Unable to reach SmartPoints." };
         }
         if (error) {
-          await enqueueOfflineAction({ ...action, status: "queued", reason: error.message });
-          if (action.id === requestedActionId) requestedResult = { status: "queued", reason: error.message };
+          const failure = classifyPointSyncError(error);
+          if (failure.status === "rejected") await removeOfflineAction(action.id);
+          else await enqueueOfflineAction({ ...action, status: "queued", reason: failure.reason });
+          if (action.id === requestedActionId) requestedResult = failure;
         } else {
           await removeOfflineAction(action.id);
           if (action.id === requestedActionId) requestedResult = { status: "synced" };

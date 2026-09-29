@@ -5,6 +5,7 @@ import { Card } from "@/app/components/ui/card";
 import { getCurrentLocalDate, getResetPointSummary, getWeekStart, getWeeklyPointSummary, shiftWeek } from "@/lib/points/validation";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
+import { getStarTrailProgress } from "@/lib/achievements/themes";
 
 type HomePageProps = {
   searchParams: Promise<{ child?: string; error?: string; manage?: string; message?: string; week?: string }>;
@@ -66,7 +67,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     supabase.from("weekly_point_resets").select("week_start, remaining_points, received_points, redeemed_points, reset_at").eq("child_id", selectedChild.id).order("reset_at", { ascending: false }).limit(1),
     supabase.from("reward_timers").select("reward_id, ends_at").eq("child_id", selectedChild.id).gt("ends_at", new Date().toISOString()),
     supabase.from("child_timer_limits").select("max_concurrent_minutes, max_daily_minutes").eq("child_id", selectedChild.id).maybeSingle(),
-    supabase.from("child_dashboard_preferences").select("show_star_trail").eq("child_id", selectedChild.id).maybeSingle(),
+    supabase.from("child_dashboard_preferences").select("show_star_trail, theme_key").eq("child_id", selectedChild.id).maybeSingle(),
   ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: null }, { data: null }];
   const latestReset = pointResets?.[0] ?? null;
   let recentActivityQuery = supabase.from("point_events").select("id, event_type, point_delta, effective_date, task_id, reward_id, reversal_of, created_at").eq("child_id", selectedChild?.id ?? "").gte("effective_date", viewedWeekStart).lt("effective_date", shiftWeek(viewedWeekStart, 1)).order("created_at", { ascending: false }).limit(100);
@@ -81,14 +82,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const pointSummary = latestReset ? getResetPointSummary(pointSummaryEvents ?? [], currentWeekStart, latestReset) : getWeeklyPointSummary(pointSummaryEvents ?? [], currentWeekStart);
   const starPoints = (events ?? []).filter((event) => event.event_type === "task_completion" || event.event_type === "task_completion_undo").reduce((total, event) => total + event.point_delta, 0);
   const stars = Math.max(0, starPoints);
-  const milestones = [{ stars: 5, title: "Rainbow Knight" }, { stars: 10, title: "Unicorn Guardian" }, { stars: 20, title: "Dragon Friend" }, { stars: 35, title: "Star Champion" }];
-  const title = [...milestones].reverse().find((milestone) => stars >= milestone.stars)?.title ?? null;
-  const nextStars = milestones.find((milestone) => stars < milestone.stars)?.stars ?? null;
+  const { title, nextStars } = getStarTrailProgress(dashboardPreferences?.theme_key, stars);
 
   return (
     <>
       {error ? <p className="mx-auto mt-4 w-full max-w-5xl rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">{error}</p> : null}
-      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} initialManager={manage === "tasks" || manage === "rewards" ? manage : undefined} initialNotice={message} isCurrentWeek={viewedWeekStart === currentWeekStart} key={`${selectedChild.id}:${manage ?? "dashboard"}`} parentId={claims.claims.sub} pointSummary={pointSummary} rewardTimers={rewardTimers ?? []} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} timerLimits={timerLimits ?? { max_concurrent_minutes: 60, max_daily_minutes: 120 }} starTrail={{ stars, title, nextStars }} showStarTrail={dashboardPreferences?.show_star_trail ?? true} /> : <FirstChildSetup />}
+      {selectedChild ? <PointsWorkspace childId={selectedChild.id} childName={selectedChild.display_name} childProfiles={activeChildren} currentDate={currentDate} currentWeekStart={viewedWeekStart} initialManager={manage === "tasks" || manage === "rewards" ? manage : undefined} initialNotice={message} isCurrentWeek={viewedWeekStart === currentWeekStart} key={`${selectedChild.id}:${manage ?? "dashboard"}`} parentId={claims.claims.sub} pointSummary={pointSummary} rewardTimers={rewardTimers ?? []} taskCatalog={taskCatalog} tasks={dailyTasks} rewards={rewards ?? []} events={events ?? []} timeZone={timeZone} timerLimits={timerLimits ?? { max_concurrent_minutes: 60, max_daily_minutes: 120 }} starTrail={{ stars, title, nextStars }} showStarTrail={dashboardPreferences?.show_star_trail ?? true} starTrailTheme={dashboardPreferences?.theme_key ?? "magic_kingdom"} /> : <FirstChildSetup />}
     </>
   );
 }
