@@ -19,4 +19,15 @@ describe("family menu", () => {
     expect(component.indexOf('action="/auth/sign-out"')).toBeLessThan(component.indexOf("</details>"));
     expect(component.indexOf("<WorkspaceModal")).toBeGreaterThan(component.indexOf("</details>"));
   });
+
+  it("shares only the public app link immediately above the install action", async () => {
+    const component = await readFile(new URL("../app/components/workspace-menu.tsx", import.meta.url), "utf8");
+
+    expect(component).toContain("Share app");
+    expect(component.indexOf("Share app")).toBeLessThan(component.indexOf("Install app"));
+    expect(component).toContain('new URL("/", window.location.origin).toString()');
+    expect(component).toContain("navigator.share");
+    expect(component).toContain("navigator.clipboard.writeText");
+    expect(component).toContain("appShareNotice");
+  });
 });

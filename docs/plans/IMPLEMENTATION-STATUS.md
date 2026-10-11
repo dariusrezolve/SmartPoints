@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-10-04 — Completed the approved installed-PWA action-feedback patch locally. Cached task, reward, and Undo actions now acknowledge before IndexedDB/network reconciliation and block only matching duplicate taps. Lint, typecheck, 81 tests, and production build pass. See `docs/plans/18-installed-pwa-action-feedback/task-01-result.md`.
+2026-10-11 — Completed the approved public app-link sharing feature locally. The workspace menu now places Share app immediately above Install app, uses native browser sharing where available, and copies only the public root link otherwise. Lint, typecheck, 82 tests, and production build pass. See `docs/plans/19-share-app-link/task-01-result.md`.
 
 ## Current position
 
@@ -48,6 +48,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 | 16-e2e-browser-suite | F1–F4 — Isolated local Playwright suite | Complete locally: see `docs/plans/16-e2e-browser-suite/task-01-result.md` through `task-04-result.md`. |
 | 17-star-trail-themes | F1–F2 — Per-child themes and badge snapshots | Deployed: see `docs/plans/17-star-trail-themes/production-release-result.md`. |
 | 18-installed-pwa-action-feedback | F1 — Immediate cached-PWA action feedback | Complete locally: see `docs/plans/18-installed-pwa-action-feedback/task-01-result.md`; pending device validation/deployment. |
+| 19-share-app-link | F1 — Share the SmartPoints app | Complete locally: see `docs/plans/19-share-app-link/task-01-result.md`; pending device validation/deployment. |
 
 ## Verified state
 
@@ -92,6 +93,7 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 - `npm run e2e` uses an unlinked local Supabase stack with a separate project ID and ports. It applies migrations, runs pgTAP, then tests onboarding, points, sharing, and a mobile viewport in Chromium. The existing local stack and hosted database are outside its target.
 - Point sync removes SQL validation failures from the offline queue and shows the rejection reason; network failures stay queued.
 - The cached installed-PWA workspace now shows provisional task, reward, and Undo feedback before queueing and reconciliation, then replaces it with the final sync outcome. Only the tapped action is pending/disabled.
+- The workspace menu offers Share app directly above Install app. It shares only the public root link through native browser sharing or copies it as a fallback, independently of the existing child-access invitation flow.
 
 ## Required before the next task can be fully verified
 
@@ -102,9 +104,10 @@ SmartPoints has a locally verified Next.js/Supabase auth and migration foundatio
 
 1. Plan and verify a Next.js patch update: the current runtime audit reports a critical advisory for the installed version, though the cited Windows and AVIF conditions do not appear to be used by this deployment.
 2. Validate the installed-PWA action-feedback patch on an authorized iPhone or iPhone simulator before requesting a preview deployment.
-3. Run a browser-authenticated production walkthrough for the deployed flows using authorized test accounts.
-4. Continue to run `npm run e2e` only on its dedicated local Supabase stack; see `e2e/README.md`.
-5. Configure an isolated preview Supabase/Auth backend before future preview data testing.
+3. Validate public Share app native sharing and copy fallback on an authorized iPhone or iPhone simulator before requesting a preview deployment.
+4. Run a browser-authenticated production walkthrough for the deployed flows using authorized test accounts.
+5. Continue to run `npm run e2e` only on its dedicated local Supabase stack; see `e2e/README.md`.
+6. Configure an isolated preview Supabase/Auth backend before future preview data testing.
 
 ## Resume protocol
 

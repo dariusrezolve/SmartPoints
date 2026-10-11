@@ -63,6 +63,7 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [rewardToDelete, setRewardToDelete] = useState<Reward | null>(null);
   const [shareLink, setShareLink] = useState("");
+  const [appShareNotice, setAppShareNotice] = useState<string | null>(null);
   const [selectedEditTaskIcon, setSelectedEditTaskIcon] = useState<TaskIconName>("CircleCheck");
   const [selectedEditRewardIcon, setSelectedEditRewardIcon] = useState<TaskIconName>("Star");
   const [editingRewardTimeBased, setEditingRewardTimeBased] = useState(false);
@@ -111,6 +112,26 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
     setDeferredInstallPrompt(null);
   }
 
+  async function shareApp() {
+    const appUrl = new URL("/", window.location.origin).toString();
+    const shareData = { title: "SmartPoints", text: "Try SmartPoints, a simple family points tracker.", url: appUrl };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        setAppShareNotice("Thanks for sharing SmartPoints.");
+        return;
+      } catch {
+        // Fall back to copying when sharing is unavailable, dismissed, or fails.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      setAppShareNotice("App link copied.");
+    } catch {
+      setAppShareNotice("Couldn't share the app link. Please try again.");
+    }
+  }
+
   return <>
     <details className="group relative" ref={menuRef}>
       <summary className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-xl border border-white/80 bg-white/85 px-3 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-md [&::-webkit-details-marker]:hidden"><span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">{childName.slice(0, 1).toUpperCase()}</span><MenuIcon aria-hidden="true" size={17}/>Menu <ChevronDown aria-hidden="true" className="text-slate-400 transition group-open:rotate-180" size={15}/></summary>
@@ -127,7 +148,9 @@ export function WorkspaceMenu({ childId, childName, childProfiles, currentWeekSt
         <Button className="w-full justify-start" onClick={() => openModal("dailyTasks")} role="menuitem" size="sm" type="button" variant="ghost"><CalendarCheck2 aria-hidden="true" size={16}/>Set daily tasks</Button>
         <Button className="w-full justify-start" onClick={() => openModal("timerLimits")} role="menuitem" size="sm" type="button" variant="ghost"><Clock3 aria-hidden="true" size={16}/>Timer limits</Button>
         <Button asChild className="w-full justify-start" role="menuitem" size="sm" variant="ghost"><Link href={`/star-trails?child=${childId}`}><Stars aria-hidden="true" size={16}/>Star Trails</Link></Button>
+        <Button className="w-full justify-start" onClick={() => void shareApp()} role="menuitem" size="sm" type="button" variant="ghost"><Share aria-hidden="true" size={16}/>Share app</Button>
         <Button className="w-full justify-start" onClick={() => openModal("install")} role="menuitem" size="sm" type="button" variant="ghost"><Download aria-hidden="true" size={16}/>Install app</Button>
+        {appShareNotice ? <p aria-live="polite" className="px-3 py-2 text-xs font-semibold text-emerald-800" role="status">{appShareNotice}</p> : null}
         <div className="my-2 border-t border-emerald-100"/>
         <Button className="w-full justify-start text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => openModal("resetWeek")} role="menuitem" size="sm" type="button" variant="ghost"><RotateCcw aria-hidden="true" size={16}/>Reset this week</Button>
         <div className="my-2 border-t border-emerald-100"/>
