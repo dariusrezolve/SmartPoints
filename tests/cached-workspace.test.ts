@@ -27,4 +27,15 @@ describe("cached daily workspace", () => {
     expect(page).toContain("Opening SmartPoints");
     expect(page).toContain("snapshot !== null || isOnline !== true");
   });
+
+  it("acknowledges cached task, reward, and Undo taps before queueing or syncing and blocks duplicate pending taps", async () => {
+    const page = await readFile(new URL("../app/~offline/page.tsx", import.meta.url), "utf8");
+
+    expect(page).toContain('setNotice({ kind: successNotice.kind, message: "Saved. Syncing…" })');
+    expect(page).toContain("pendingActionKeysRef");
+    expect(page).toContain('disabled={pendingActionKeys.has(`complete:${task.id}`)}');
+    expect(page).toContain('disabled={pendingActionKeys.has(`redeem:${reward.id}`)}');
+    expect(page).toContain("const actionKey");
+    expect(page).toContain("disabled={pendingActionKeys.has(actionKey)}");
+  });
 });
